@@ -2,12 +2,85 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>chegou</title>
+
+  <!-- cara de app: cor da barra de status e tela cheia quando salvo na tela inicial -->
+  <meta name="theme-color" content="#0b0e11">
+  <meta name="color-scheme" content="dark">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="chegou">
+
+  <!-- impede o iPhone de transformar o IP em link de telefone -->
+  <meta name="format-detection" content="telephone=no">
+
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230b0e11'/%3E%3Ccircle cx='8' cy='8' r='3.5' fill='%233fb950'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- tela de envio que abre no celular -->
+  <main class="terminal">
+
+    <header class="titlebar">
+      <span class="dots" aria-hidden="true"><span></span><span></span><span></span></span>
+      <span class="title" id="host">chegou</span>
+      <span class="dots-spacer" aria-hidden="true"></span>
+    </header>
+
+    <section class="screen" id="screen">
+
+      <!-- abertura -->
+      <div class="boot">
+        <p class="line" style="--i: 0"><span class="prompt">$</span><span class="typed">chegou</span></p>
+        <p class="line" style="--i: 2"><span class="ok">●</span> conectado ao PC</p>
+        <p class="line dim" style="--i: 3">  pronto pra receber arquivos</p>
+      </div>
+
+      <!-- arquivos escolhidos -->
+      <div class="block" style="--i: 4">
+        <p class="line dim"># selecionados</p>
+        <p class="line dim" id="empty">  nenhum arquivo ainda</p>
+        <ul class="files" id="file-list"></ul>
+      </div>
+
+      <!-- progresso do envio -->
+      <div class="block" id="progress-area" hidden>
+        <p class="line dim"># enviando</p>
+        <div
+          class="line progress"
+          id="progress"
+          role="progressbar"
+          aria-label="progresso do envio"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          aria-valuenow="0"
+        >
+          <span class="bar" id="progress-bar">[░░░░░░░░░░░░░░░░]</span>
+          <span id="progress-pct">0%</span>
+        </div>
+        <p class="line dim" id="progress-detail"></p>
+      </div>
+
+      <!-- mensagens: "✓ 3 arquivos enviados", erros... -->
+      <div class="block" id="log" aria-live="polite"></div>
+
+      <p class="line cursor-line" style="--i: 4"><span class="prompt">$</span><span class="cursor" aria-hidden="true"></span></p>
+
+    </section>
+
+    <footer class="actions">
+      <label class="btn" id="pick">
+        <input type="file" id="files" multiple class="sr-only">
+        [ escolher arquivos ]
+      </label>
+      <button type="button" class="btn btn-primary" id="send" disabled>
+        enviar
+      </button>
+    </footer>
+
+  </main>
+
   <script src="app.js"></script>
 </body>
 </html>
