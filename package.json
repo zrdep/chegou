@@ -1,0 +1,39 @@
+{
+  "name": "chegou",
+  "version": "0.0.1",
+  "description": "Mande arquivos do celular pro PC pela rede local. Um comando, um QR code, pronto.",
+  "type": "module",
+  "bin": {
+    "chegou": "bin/chegou.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "public"
+  ],
+  "scripts": {
+    "start": "node bin/chegou.js",
+    "dev": "node --watch bin/chegou.js"
+  },
+  "keywords": [
+    "file-transfer",
+    "lan",
+    "qrcode",
+    "upload",
+    "cli",
+    "mobile",
+    "local-network"
+  ],
+  "author": "Pedro Randolfo",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@fastify/multipart": "^10.1.2",
+    "@fastify/static": "^10.1.4",
+    "fastify": "^5.12.5",
+    "picocolors": "^1.1.1",
+    "qrcode-terminal": "^0.12.0"
+  }
+}
