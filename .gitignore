@@ -4,3 +4,4 @@ node_modules/
 Thumbs.db
 *.log
 recebidos/
+package-lock.json
