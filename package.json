@@ -1,6 +1,6 @@
 {
   "name": "chegou",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Arquivos entre o celular e o PC pela rede local. Um comando, um QR code, pronto.",
   "type": "module",
   "bin": {

@@ -61,10 +61,14 @@ npx chegou
 ## ▸ uso
 
 ```bash
-chegou                      # pasta padrão, porta automática
+chegou                      # receber arquivos do celular
+chegou foto.png video.mp4   # disponibiliza arquivos pro celular baixar
+chegou https://youtube.com  # manda um link ou texto pro celular
 chegou --dir ./recebidos    # escolhe onde salvar
 chegou --port 3000          # escolhe a porta
 ```
+
+> **dica:** com o `chegou` rodando no terminal, basta **arrastar qualquer arquivo** pra janela dele ou digitar um texto/link e apertar Enter. O celular recebe na hora!
 
 ---
 
@@ -96,8 +100,8 @@ redes públicas costumam isolar os dispositivos entre si. não tem como contorna
 - [x] upload em streaming (arquivos grandes)
 - [x] barra de progresso
 - [x] câmera direta: foto e gravação de vídeo celular → PC
-- [ ] mandar texto e links, não só arquivos
-- [ ] mandar do PC pro celular
+- [x] mandar do PC pro celular (download de arquivos)
+- [x] mandar texto e links (abrir e copiar no celular)
 - [ ] desligar sozinho depois de X minutos
 
 ---

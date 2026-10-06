@@ -126,6 +126,7 @@ export function printBanner({ ip, port, preferredPort, dir, token, version }) {
   info.push(
     '',
     pc.dim(networkUrl ? 'escaneie o QR com o celular' : 'conecte o PC na rede pra usar no celular'),
+    pc.dim('arraste arquivos aqui ou digite link + Enter'),
     pc.dim('ctrl+c para sair'),
   )
 
@@ -144,7 +145,7 @@ export function printBanner({ ip, port, preferredPort, dir, token, version }) {
   console.log()
   console.log(box(lines, `chegou v${version}`))
   console.log()
-  console.log(pc.dim(`  ${sym.h.repeat(2)} recebidos ${sym.h.repeat(40)}`))
+  console.log(pc.dim(`  ${sym.h.repeat(2)} atividade ${sym.h.repeat(40)}`))
   console.log()
 }
 
@@ -163,6 +164,36 @@ export function printFile({ name, size }) {
   const dots = '·'.repeat(Math.max(2, 48 - shown.length - sizeText.length))
 
   console.log(`  ${pc.green(sym.ok)} ${pc.dim(time)}  ${shown} ${pc.dim(dots)} ${pc.cyan(sizeText)}`)
+}
+
+/**
+ * imprime item compartilhado pelo PC com o celular
+ * @param {{ name?: string, size?: number, content?: string, type?: 'file' | 'text' }} item
+ */
+export function printShared(item) {
+  const time = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+  if (item.type === 'file' || item.name) {
+    const shown = item.name.length > 36 ? `${item.name.slice(0, 35)}…` : item.name
+    const sizeText = formatSize(item.size ?? 0)
+    const dots = '·'.repeat(Math.max(2, 48 - shown.length - sizeText.length))
+    console.log(`  ${pc.cyan('↑')} ${pc.dim(time)}  ${shown} ${pc.dim(dots)} ${pc.cyan(sizeText)} ${pc.dim('(compartilhado)')}`)
+  } else {
+    const text = item.content ?? ''
+    const shown = text.length > 36 ? `${text.slice(0, 35)}…` : text
+    console.log(`  ${pc.cyan('↑')} ${pc.dim(time)}  ${shown} ${pc.dim('···· compartilhado com celular')}`)
+  }
+}
+
+/**
+ * imprime arquivo baixado pelo celular
+ * @param {{ name: string, size: number }} file
+ */
+export function printDownloaded({ name, size }) {
+  const time = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+  const shown = name.length > 36 ? `${name.slice(0, 35)}…` : name
+  const sizeText = formatSize(size)
+  const dots = '·'.repeat(Math.max(2, 48 - shown.length - sizeText.length))
+  console.log(`  ${pc.green('↓')} ${pc.dim(time)}  ${shown} ${pc.dim(dots)} ${pc.green(sizeText)} ${pc.dim('(baixado no celular)')}`)
 }
 
 /**

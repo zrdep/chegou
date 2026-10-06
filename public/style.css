@@ -500,3 +500,119 @@ body::after {
   60% { opacity: 1; transform: scale(1.02); }
   100% { transform: scale(1); }
 }
+
+/* ---------- itens do PC para o celular ---------- */
+
+.pc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 0.5em;
+  list-style: none;
+}
+
+.pc-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  animation: appear 0.3s ease-out;
+}
+
+.pc-item.pc-flash {
+  animation: camera-flash 0.5s ease-out;
+  border-color: var(--cyan);
+}
+
+.pc-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.pc-item-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.pc-item-name {
+  color: var(--text);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pc-item-size {
+  color: var(--dim);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.pc-item-text {
+  color: var(--cyan);
+  word-break: break-all;
+  font-size: 14px;
+}
+
+.pc-item-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.btn-pc-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 13px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  text-decoration: none;
+  transition: border-color 0.15s, color 0.15s, transform 0.1s;
+}
+
+.btn-pc-action:active {
+  transform: scale(0.96);
+}
+
+.btn-pc-download {
+  color: var(--green);
+  border-color: var(--green);
+}
+
+.btn-pc-download:active {
+  background: rgb(63 185 80 / 0.1);
+}
+
+.btn-pc-copy {
+  color: var(--cyan);
+  border-color: var(--cyan);
+}
+
+.btn-pc-copy:active {
+  background: rgb(86 212 221 / 0.1);
+}
+
+.btn-pc-open {
+  color: var(--yellow);
+  border-color: var(--yellow);
+}
+
+.btn-pc-open:active {
+  background: rgb(227 179 65 / 0.1);
+}
+

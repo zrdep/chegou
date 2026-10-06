@@ -17,6 +17,8 @@ const els = {
   pct: $('progress-pct'),
   detail: $('progress-detail'),
   log: $('log'),
+  pcArea: $('pc-area'),
+  pcList: $('pc-list'),
 }
 
 const media = {
@@ -403,12 +405,116 @@ media.videoInput.addEventListener('change', () => {
   if (file) handleDirectMedia(file, 'video')
 })
 
+// ---------- itens do PC para você ----------
+
+function renderPcItem(item, isNew = false) {
+  const li = el('li', `pc-item ${isNew ? 'pc-flash' : ''}`)
+  li.id = `pc-item-${item.id}`
+
+  const info = el('div', 'pc-item-info')
+
+  if (item.type === 'file') {
+    const header = el('div', 'pc-item-header')
+    header.append(
+      el('span', 'pc-item-name', item.name),
+      el('span', 'pc-item-size', formatSize(item.size ?? 0))
+    )
+    info.append(header)
+
+    const actions = el('div', 'pc-item-actions')
+    const downloadLink = document.createElement('a')
+    downloadLink.className = 'btn-pc-action btn-pc-download'
+    downloadLink.href = item.downloadUrl || `/download/${item.id}?t=${encodeURIComponent(token)}`
+    downloadLink.download = item.name
+    downloadLink.textContent = '[ baixar ]'
+    actions.append(downloadLink)
+
+    li.append(info, actions)
+  } else {
+    const textSpan = el('span', 'pc-item-text', item.content)
+    info.append(textSpan)
+
+    const actions = el('div', 'pc-item-actions')
+
+    const copyBtn = document.createElement('button')
+    copyBtn.type = 'button'
+    copyBtn.className = 'btn-pc-action btn-pc-copy'
+    copyBtn.textContent = '[ copiar ]'
+    copyBtn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(item.content)
+        copyBtn.textContent = 'copiado ✓'
+        setTimeout(() => { copyBtn.textContent = '[ copiar ]' }, 2000)
+      } catch {
+        prompt('Copie o texto abaixo:', item.content)
+      }
+    })
+    actions.append(copyBtn)
+
+    if (item.isUrl) {
+      const openLink = document.createElement('a')
+      openLink.className = 'btn-pc-action btn-pc-open'
+      openLink.href = item.content
+      openLink.target = '_blank'
+      openLink.rel = 'noopener noreferrer'
+      openLink.textContent = '[ abrir ]'
+      actions.append(openLink)
+    }
+
+    li.append(info, actions)
+  }
+
+  return li
+}
+
+function initPcStream() {
+  if (!token) return
+
+  const sse = new EventSource(`/events?t=${encodeURIComponent(token)}`)
+
+  sse.addEventListener('init', (e) => {
+    try {
+      const items = JSON.parse(e.data)
+      els.pcList.replaceChildren()
+      if (items.length) {
+        els.pcArea.hidden = false
+        for (const item of items) {
+          els.pcList.append(renderPcItem(item))
+        }
+      } else {
+        els.pcArea.hidden = true
+      }
+    } catch {}
+  })
+
+  sse.addEventListener('item', (e) => {
+    try {
+      const item = JSON.parse(e.data)
+      els.pcArea.hidden = false
+      const node = renderPcItem(item, true)
+      els.pcList.prepend(node)
+
+      const label = item.type === 'file' ? item.name : item.content
+      const short = label.length > 25 ? `${label.slice(0, 24)}…` : label
+      log(`✓ novo do PC: ${short}`, 'ok success')
+      navigator.vibrate?.(80)
+    } catch {}
+  })
+
+  sse.addEventListener('error', () => {
+    // EventSource reconecta automaticamente
+  })
+}
+
 // ---------- início ----------
 
 els.host.textContent = `chegou · ${location.hostname}`
 
 if (!token) {
   log('! sem token na url · escaneie o QR code do terminal', 'warn')
+} else {
+  initPcStream()
 }
 
 setState('idle')
+

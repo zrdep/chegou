@@ -1,3 +1,4 @@
+import { createReadStream, existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import Fastify from 'fastify'
 import multipart from '@fastify/multipart'
@@ -13,10 +14,10 @@ const MAX_FILE_SIZE = 10 * 1024 ** 3
 
 /**
  * cria a instância do servidor com os plugins registrados
- * @param {{ port: number, dir: string, token: string, onFile?: function }} options
+ * @param {{ port: number, dir: string, token: string, onFile?: function, shareManager?: import('./share.js').createShareManager, onDownload?: function }} options
  * @returns {Promise<import('fastify').FastifyInstance>}
  */
-export async function createServer({ port, dir, token, onFile }) {
+export async function createServer({ port, dir, token, onFile, shareManager, onDownload }) {
   const app = Fastify({ logger: false })
 
   await app.register(multipart, {
@@ -32,11 +33,82 @@ export async function createServer({ port, dir, token, onFile }) {
     return reply.sendFile('index.html')
   })
 
-  // upload: só passa quem tem o token certo
+  // upload: celular -> PC
   app.post('/upload', {
     onRequest: createTokenGuard(token),
     handler: createUploadHandler(dir, { onFile }),
   })
 
+  // lista de itens compartilhados do PC pro celular
+  app.get('/api/shared', {
+    onRequest: createTokenGuard(token),
+    handler: async () => {
+      const items = shareManager ? shareManager.getPublicItems(token) : []
+      return { items }
+    },
+  })
+
+  // eventos em tempo real (SSE): avisa o celular na hora que o PC compartilha algo novo
+  app.get('/events', {
+    onRequest: createTokenGuard(token),
+    handler: (request, reply) => {
+      reply.raw.setHeader('Content-Type', 'text/event-stream')
+      reply.raw.setHeader('Cache-Control', 'no-cache, no-transform')
+      reply.raw.setHeader('Connection', 'keep-alive')
+      reply.raw.setHeader('Access-Control-Allow-Origin', '*')
+      reply.raw.flushHeaders?.()
+
+      // envia os itens que já existem de início
+      const initial = shareManager ? shareManager.getPublicItems(token) : []
+      reply.raw.write(`event: init\ndata: ${JSON.stringify(initial)}\n\n`)
+
+      const onNewItem = (event, item) => {
+        const publicItem = shareManager.toPublic(item, token)
+        reply.raw.write(`event: ${event}\ndata: ${JSON.stringify(publicItem)}\n\n`)
+      }
+
+      shareManager?.subscribe(onNewItem)
+
+      request.raw.on('close', () => {
+        shareManager?.unsubscribe(onNewItem)
+      })
+    },
+  })
+
+  // download de arquivo do PC pelo celular
+  app.get('/download/:id', {
+    onRequest: createTokenGuard(token),
+    handler: async (request, reply) => {
+      const { id } = request.params
+      const item = shareManager?.getItem(id)
+
+      if (!item || item.type !== 'file' || !existsSync(item.path)) {
+        return reply.code(404).send({ error: 'arquivo não encontrado' })
+      }
+
+      onDownload?.({ name: item.name, size: item.size })
+
+      const encoded = encodeURIComponent(item.name)
+      reply.header('Content-Disposition', `attachment; filename="${encoded}"; filename*=UTF-8''${encoded}`)
+      reply.header('Content-Length', item.size)
+      reply.type('application/octet-stream')
+
+      return reply.send(createReadStream(item.path))
+    },
+  })
+
+  // compartilhar texto pelo navegador
+  app.post('/api/share', {
+    onRequest: createTokenGuard(token),
+    handler: async (request, reply) => {
+      const body = request.body || {}
+      const text = body.text
+      if (!text) return reply.code(400).send({ error: 'texto obrigatório' })
+      const item = shareManager.addText(text)
+      return { item: shareManager.toPublic(item, token) }
+    },
+  })
+
   return app
 }
+

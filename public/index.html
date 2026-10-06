@@ -34,12 +34,18 @@
       <div class="boot">
         <p class="line" style="--i: 0"><span class="prompt">$</span><span class="typed">chegou</span></p>
         <p class="line" style="--i: 2"><span class="ok">●</span> conectado ao PC</p>
-        <p class="line dim" style="--i: 3">  pronto pra receber arquivos</p>
+        <p class="line dim" style="--i: 3">  pronto pra trocar arquivos</p>
+      </div>
+
+      <!-- itens do PC para você -->
+      <div class="block" id="pc-area" hidden>
+        <p class="line dim"># do PC → você</p>
+        <ul class="pc-list" id="pc-list"></ul>
       </div>
 
       <!-- arquivos escolhidos -->
       <div class="block" style="--i: 4">
-        <p class="line dim"># selecionados</p>
+        <p class="line dim"># enviar para o PC</p>
         <p class="line dim" id="empty">  nenhum arquivo ainda</p>
         <ul class="files" id="file-list"></ul>
         <p class="line dim" id="total" hidden></p>
