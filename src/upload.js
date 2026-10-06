@@ -1,5 +1,7 @@
-import { existsSync } from 'node:fs'
-import { extname, join } from 'node:path'
+import { createWriteStream, existsSync } from 'node:fs'
+import { mkdir, rm, stat } from 'node:fs/promises'
+import { basename, extname, join } from 'node:path'
+import { pipeline } from 'node:stream/promises'
 
 // caracteres proibidos no windows + caracteres de controle
 const FORBIDDEN = /[<>:"/\\|?*\u0000-\u001f\u007f]/g
@@ -58,4 +60,70 @@ export function uniquePath(dir, filename) {
   }
 
   return candidate
+}
+
+/**
+ * abre o arquivo pra escrita sem nunca sobrescrever
+ * @param {string} dir
+ * @param {string} filename
+ * @returns {Promise<{ path: string, stream: import('node:fs').WriteStream }>}
+ */
+async function openUnique(dir, filename) {
+  for (let attempt = 0; attempt < 100; attempt++) {
+    const path = uniquePath(dir, filename)
+    const stream = createWriteStream(path, { flags: 'wx' })
+
+    try {
+      await new Promise((resolve, reject) => {
+        stream.once('open', resolve)
+        stream.once('error', reject)
+      })
+      return { path, stream }
+    } catch (err) {
+      if (err.code !== 'EEXIST') throw err
+    }
+  }
+
+  throw new Error(`não consegui um nome livre para ${filename}`)
+}
+
+/**
+ * cria o handler da rota de upload
+ * @param {string} destDir pasta onde os arquivos são salvos
+ * @param {{ onFile?: (file: { name: string, size: number }) => void }} options
+ * @returns {function}
+ */
+export function createUploadHandler(destDir, { onFile } = {}) {
+  return async (request, reply) => {
+    await mkdir(destDir, { recursive: true })
+
+    const saved = []
+
+    for await (const part of request.files()) {
+      const filename = sanitizeFilename(part.filename)
+      const { path, stream } = await openUnique(destDir, filename)
+
+      try {
+        await pipeline(part.file, stream)
+      } catch (err) {
+        // conexão caiu no meio: apaga o pedaço pela metade
+        await rm(path, { force: true })
+        throw err
+      }
+
+      // passou do limite de tamanho do multipart: arquivo veio cortado
+      if (part.file.truncated) {
+        await rm(path, { force: true })
+        return reply.code(413).send({ error: `${filename} é grande demais`, files: saved })
+      }
+
+      const { size } = await stat(path)
+      const file = { name: basename(path), size }
+
+      saved.push(file)
+      onFile?.(file)
+    }
+
+    return { files: saved }
+  }
 }
