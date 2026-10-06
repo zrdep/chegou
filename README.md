@@ -25,8 +25,8 @@
 
 1. rode `chegou` no PC
 2. escaneie o QR code com o celular
-3. escolha os arquivos e envie
-4. eles caem direto na pasta do PC
+3. escolha arquivos, tire fotos ou grave vídeos
+4. tudo cai direto na pasta do PC
 
 sem app, sem conta, sem internet. só precisa estar na mesma rede.
 
@@ -95,6 +95,7 @@ redes públicas costumam isolar os dispositivos entre si. não tem como contorna
 - [x] token de sessão
 - [x] upload em streaming (arquivos grandes)
 - [x] barra de progresso
+- [x] câmera direta: foto e gravação de vídeo celular → PC
 - [ ] mandar texto e links, não só arquivos
 - [ ] mandar do PC pro celular
 - [ ] desligar sozinho depois de X minutos

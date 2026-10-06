@@ -19,13 +19,18 @@ const els = {
   log: $('log'),
 }
 
-const cam = {
-  input: $('camera'),
-  btn: $('camera-btn'),
-  btnText: $('camera-btn-text'),
+const media = {
+  photoInput: $('camera'),
+  photoBtn: $('camera-btn'),
+  photoBtnText: $('camera-btn-text'),
+  videoInput: $('camera-video'),
+  videoBtn: $('video-btn'),
+  videoBtnText: $('video-btn-text'),
   area: $('camera-area'),
+  title: $('camera-title'),
   card: $('camera-card'),
   thumb: $('camera-thumb'),
+  videoThumb: $('camera-video-thumb'),
   name: $('camera-name'),
   fill: $('camera-fill'),
   pct: $('camera-pct'),
@@ -41,7 +46,7 @@ let selected = []
 
 /** idle → selecting → sending → done (ou error) */
 let state = 'idle'
-let cameraBusy = false
+let mediaBusy = false
 
 // ---------- utilitários ----------
 
@@ -113,8 +118,10 @@ function setState(next) {
 
   els.input.disabled = busy
   els.pick.classList.toggle('is-disabled', busy)
-  cam.btn.classList.toggle('is-disabled', busy || cameraBusy)
-  cam.input.disabled = busy || cameraBusy
+  media.photoBtn.classList.toggle('is-disabled', busy || mediaBusy)
+  media.photoInput.disabled = busy || mediaBusy
+  media.videoBtn.classList.toggle('is-disabled', busy || mediaBusy)
+  media.videoInput.disabled = busy || mediaBusy
   els.send.disabled = busy || selected.length === 0 || next === 'done'
 
   els.pickText.textContent =
@@ -225,7 +232,7 @@ function upload(files, onProgress) {
 
 // avisa antes de fechar a página no meio do envio
 window.addEventListener('beforeunload', (event) => {
-  if (state === 'sending' || cameraBusy) event.preventDefault()
+  if (state === 'sending' || mediaBusy) event.preventDefault()
 })
 
 els.send.addEventListener('click', async () => {
@@ -270,75 +277,130 @@ els.send.addEventListener('click', async () => {
   }
 })
 
-// ---------- câmera direta ----------
+// ---------- câmera e vídeo direto ----------
 
-let cameraUrl = null
+let mediaUrl = null
 
-function setCameraProgress(ratio) {
+function setMediaProgress(ratio) {
   const percent = Math.floor(Math.min(1, Math.max(0, ratio)) * 100)
-  cam.fill.style.width = `${percent}%`
-  cam.pct.textContent = `${percent}%`
+  media.fill.style.width = `${percent}%`
+  media.pct.textContent = `${percent}%`
 }
 
-cam.input.addEventListener('change', async () => {
-  const file = cam.input.files[0]
-  if (!file || state === 'sending' || cameraBusy) return
+/**
+ * envia foto ou vídeo capturado direto da câmera pro PC
+ * @param {File} file
+ * @param {'photo' | 'video'} kind
+ */
+async function handleDirectMedia(file, kind) {
+  if (!file || state === 'sending' || mediaBusy) return
 
-  cam.input.value = ''
-  cameraBusy = true
+  // garante extensão correta caso o celular mande nome genérico sem extensão
+  let filename = file.name || (kind === 'video' ? 'video' : 'foto')
+  if (!filename.includes('.')) {
+    if (file.type === 'video/mp4') filename += '.mp4'
+    else if (file.type === 'video/quicktime') filename += '.mov'
+    else if (file.type === 'video/webm') filename += '.webm'
+    else if (file.type === 'image/jpeg') filename += '.jpg'
+    else if (file.type === 'image/png') filename += '.png'
+    else if (kind === 'video') filename += '.mp4'
+    else filename += '.jpg'
+  }
+
+  const uploadFile = filename !== file.name
+    ? new File([file], filename, { type: file.type || (kind === 'video' ? 'video/mp4' : 'image/jpeg') })
+    : file
+
+  mediaBusy = true
 
   // preview
-  if (cameraUrl) URL.revokeObjectURL(cameraUrl)
-  cameraUrl = URL.createObjectURL(file)
-  cam.thumb.src = cameraUrl
-  cam.name.textContent = file.name
-  cam.area.hidden = false
-  cam.card.className = 'camera-card camera-flash'
-  cam.progress.hidden = false
-  cam.detail.className = 'line dim camera-detail'
-  cam.detail.textContent = ''
-  setCameraProgress(0)
+  if (mediaUrl) URL.revokeObjectURL(mediaUrl)
+  mediaUrl = URL.createObjectURL(uploadFile)
 
-  // lock UI
+  const isVideo = kind === 'video' || uploadFile.type.startsWith('video/')
+  if (isVideo) {
+    media.thumb.hidden = true
+    media.videoThumb.hidden = false
+    media.videoThumb.src = mediaUrl
+    media.videoThumb.play().catch(() => {})
+    media.title.textContent = '# vídeo → PC'
+  } else {
+    media.videoThumb.hidden = true
+    media.videoThumb.pause?.()
+    media.thumb.hidden = false
+    media.thumb.src = mediaUrl
+    media.title.textContent = '# foto → PC'
+  }
+
+  media.name.textContent = uploadFile.name
+  media.area.hidden = false
+  media.card.className = 'camera-card camera-flash'
+  media.progress.hidden = false
+  media.detail.className = 'line dim camera-detail'
+  media.detail.textContent = ''
+  setMediaProgress(0)
+
+  // trava os controles durante o envio
   els.input.disabled = true
   els.pick.classList.add('is-disabled')
   els.send.disabled = true
-  cam.input.disabled = true
-  cam.btn.classList.add('is-disabled')
-  cam.btnText.textContent = 'enviando...'
+  media.photoInput.disabled = true
+  media.photoBtn.classList.add('is-disabled')
+  media.videoInput.disabled = true
+  media.videoBtn.classList.add('is-disabled')
+
+  if (isVideo) {
+    media.videoBtnText.textContent = 'enviando...'
+  } else {
+    media.photoBtnText.textContent = 'enviando...'
+  }
   document.body.dataset.state = 'sending'
 
   const started = performance.now()
   const wakeLock = await navigator.wakeLock?.request('screen').catch(() => null)
+  const label = isVideo ? 'vídeo' : 'foto'
 
   try {
-    await upload([file], (loaded, total) => {
+    await upload([uploadFile], (loaded, total) => {
       const seconds = (performance.now() - started) / 1000
       const speed = seconds > 0.3 ? ` · ${formatSize(loaded / seconds)}/s` : ''
-      setCameraProgress(loaded / total)
-      cam.detail.textContent = `  ${formatSize(loaded)} de ${formatSize(total)}${speed}`
+      setMediaProgress(loaded / total)
+      media.detail.textContent = `  ${formatSize(loaded)} de ${formatSize(total)}${speed}`
     })
 
-    setCameraProgress(1)
-    cam.card.className = 'camera-card is-done'
-    cam.progress.hidden = true
-    cam.detail.className = 'line camera-detail ok'
-    cam.detail.textContent = '✓ foto chegou no PC'
-    log('✓ foto chegou no PC', 'ok success')
+    setMediaProgress(1)
+    media.card.className = 'camera-card is-done'
+    media.progress.hidden = true
+    media.detail.className = 'line camera-detail ok'
+    media.detail.textContent = `✓ ${label} chegou no PC`
+    log(`✓ ${label} chegou no PC`, 'ok success')
 
   } catch (err) {
-    cam.card.className = 'camera-card is-error'
-    cam.progress.hidden = true
-    cam.detail.className = 'line camera-detail err'
-    cam.detail.textContent = `✗ ${err.message}`
+    media.card.className = 'camera-card is-error'
+    media.progress.hidden = true
+    media.detail.className = 'line camera-detail err'
+    media.detail.textContent = `✗ ${err.message}`
     log(`✗ ${err.message}`, 'err')
 
   } finally {
     wakeLock?.release().catch(() => {})
-    cameraBusy = false
-    cam.btnText.textContent = '📸 foto'
+    mediaBusy = false
+    media.photoBtnText.textContent = '📸 foto'
+    media.videoBtnText.textContent = '🎥 vídeo'
+    media.photoInput.value = ''
+    media.videoInput.value = ''
     setState(selected.length ? 'selecting' : 'idle')
   }
+}
+
+media.photoInput.addEventListener('change', () => {
+  const file = media.photoInput.files[0]
+  if (file) handleDirectMedia(file, 'photo')
+})
+
+media.videoInput.addEventListener('change', () => {
+  const file = media.videoInput.files[0]
+  if (file) handleDirectMedia(file, 'video')
 })
 
 // ---------- início ----------

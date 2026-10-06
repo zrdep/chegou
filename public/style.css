@@ -398,7 +398,7 @@ body::after {
 
 .actions-row {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
 
@@ -406,11 +406,20 @@ body::after {
   color: var(--yellow);
   border-color: var(--yellow);
   white-space: nowrap;
-  padding: 14px 20px;
 }
 
 .btn-camera:active {
   background: rgb(227 179 65 / 0.08);
+}
+
+.btn-video {
+  color: var(--cyan);
+  border-color: var(--cyan);
+  white-space: nowrap;
+}
+
+.btn-video:active {
+  background: rgb(86 212 221 / 0.08);
 }
 
 .camera-card {
