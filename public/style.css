@@ -1,1 +1,311 @@
-/* estilos da página de envio */
+/* mesmas cores do terminal do PC: verde, ciano, amarelo e cinza */
+:root {
+  --bg: #0b0e11;
+  --panel: #11161b;
+  --border: #222b33;
+  --text: #c9d1d9;
+  --dim: #6e7681;
+  --green: #3fb950;
+  --cyan: #56d4dd;
+  --yellow: #e3b341;
+  --red: #f85149;
+
+  /* fontes que já vêm no sistema: a página funciona sem internet */
+  --font: ui-monospace, 'Cascadia Code', 'SF Mono', Menlo, Consolas, 'Roboto Mono', 'Droid Sans Mono', monospace;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.6 var(--font);
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  display: flex;
+  justify-content: center;
+  padding-top: env(safe-area-inset-top);
+}
+
+/* linhas de monitor antigo, bem sutis */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(to bottom, rgb(255 255 255 / 0.018) 0 1px, transparent 1px 3px);
+}
+
+::selection {
+  background: var(--green);
+  color: var(--bg);
+}
+
+/* ---------- janela ---------- */
+
+.terminal {
+  width: 100%;
+  max-width: 640px;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.titlebar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  color: var(--dim);
+  font-size: 13px;
+}
+
+.dots,
+.dots-spacer {
+  display: flex;
+  gap: 6px;
+  width: 42px;
+}
+
+.dots span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--border);
+}
+
+.title {
+  flex: 1;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* no PC/tablet vira uma janela flutuante */
+@media (min-width: 700px) {
+  body {
+    padding: 48px 16px;
+    align-items: flex-start;
+  }
+
+  .terminal {
+    min-height: 0;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--panel);
+    box-shadow: 0 0 60px rgb(63 185 80 / 0.06);
+    overflow: hidden;
+  }
+
+  .actions {
+    position: static;
+    background: none;
+  }
+}
+
+/* ---------- tela ---------- */
+
+.screen {
+  flex: 1;
+  padding: 16px;
+}
+
+.line {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  min-height: 1.6em;
+}
+
+.block {
+  margin-top: 1.6em;
+}
+
+.prompt {
+  color: var(--green);
+  margin-right: 1ch;
+}
+
+.dim { color: var(--dim); }
+.ok { color: var(--green); }
+.info { color: var(--cyan); }
+.warn { color: var(--yellow); }
+.err { color: var(--red); }
+
+/* ---------- lista de arquivos ---------- */
+
+.files {
+  list-style: none;
+}
+
+/* + foto.jpg ·············· 2.3 MB */
+.files li {
+  display: flex;
+  align-items: baseline;
+  gap: 1ch;
+  min-width: 0;
+}
+
+.files li::before {
+  content: '+';
+  color: var(--green);
+}
+
+.files .name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.files .fill {
+  flex: 1;
+  min-width: 2ch;
+  border-bottom: 2px dotted var(--border);
+  transform: translateY(-0.3em);
+}
+
+.files .size {
+  color: var(--dim);
+  white-space: nowrap;
+}
+
+/* ---------- progresso ---------- */
+
+.progress {
+  display: flex;
+  gap: 1ch;
+}
+
+.bar {
+  color: var(--green);
+  letter-spacing: -0.05em;
+}
+
+/* ---------- botões ---------- */
+
+.actions {
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  gap: 10px;
+  padding: 12px 16px calc(16px + env(safe-area-inset-bottom));
+  background: linear-gradient(to bottom, transparent, var(--bg) 24px);
+}
+
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 56px;
+  padding: 14px;
+  font: inherit;
+  font-size: 16px;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.1s, border-color 0.2s, color 0.2s;
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn:focus-within,
+.btn:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+.btn-primary {
+  color: var(--green);
+  border-color: var(--green);
+}
+
+.btn-primary:disabled {
+  color: var(--dim);
+  border-color: var(--border);
+  opacity: 0.5;
+  cursor: default;
+  transform: none;
+}
+
+/* esconde o input mas mantém ele clicável pela label e acessível */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ---------- animações ---------- */
+
+/* cada linha da abertura aparece em sequência (--i = ordem) */
+.boot .line,
+.block[style],
+.cursor-line {
+  opacity: 0;
+  animation: appear 0s calc(0.25s + var(--i) * 0.3s) forwards;
+}
+
+/* "chegou" sendo digitado */
+.typed {
+  display: inline-block;
+  overflow: hidden;
+  white-space: nowrap;
+  vertical-align: bottom;
+  width: 0;
+  animation: typing 0.5s 0.25s steps(6) forwards;
+}
+
+.cursor {
+  display: inline-block;
+  width: 0.6em;
+  height: 1.1em;
+  vertical-align: text-bottom;
+  background: var(--text);
+  animation: blink 1s steps(1) infinite;
+}
+
+@keyframes appear {
+  to { opacity: 1; }
+}
+
+@keyframes typing {
+  to { width: 6ch; }
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+
+  .cursor {
+    animation: none;
+  }
+}
