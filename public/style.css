@@ -161,6 +161,8 @@ body::after {
 .files li::before {
   content: '+';
   color: var(--green);
+  display: inline-block;
+  width: 1ch;
 }
 
 .files .name {
@@ -190,8 +192,27 @@ body::after {
 }
 
 .bar {
-  color: var(--green);
-  letter-spacing: -0.05em;
+  display: inline-flex;
+  align-items: center;
+  color: var(--dim);
+}
+
+/* trilho pontilhado, como o ░ do terminal */
+.track {
+  display: inline-block;
+  width: 16ch;
+  height: 0.9em;
+  margin: 0 0.3ch;
+  background: radial-gradient(circle, var(--border) 1px, transparent 1.5px) 0 0 / 4px 4px;
+}
+
+/* parte cheia, desliza suave a cada atualização */
+.fill-bar {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: var(--green);
+  transition: width 0.3s ease-out;
 }
 
 /* ---------- botões ---------- */
@@ -308,4 +329,67 @@ body::after {
   .cursor {
     animation: none;
   }
+}
+
+/* ---------- estados ---------- */
+
+.btn.is-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* durante o envio o cursor para de piscar e fica "ocupado" */
+[data-state='sending'] .cursor {
+  animation: none;
+  opacity: 0.4;
+}
+
+/* barra respirando enquanto envia */
+[data-state='sending'] .fill-bar {
+  animation: breathe 1.4s ease-in-out infinite;
+}
+
+[data-state='done'] .fill-bar {
+  box-shadow: 0 0 12px rgb(63 185 80 / 0.6);
+}
+
+[data-state='error'] .fill-bar {
+  background: var(--red);
+}
+
+[data-state='done'] .btn-primary:disabled {
+  color: var(--green);
+  border-color: var(--green);
+  opacity: 0.7;
+}
+
+/* o "+" de cada arquivo vira "✓" em sequência */
+.files li.sent::before {
+  content: '✓';
+  animation: pop 0.4s calc(var(--n, 0) * 70ms) cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.files li.failed::before {
+  content: '✗';
+  color: var(--red);
+}
+
+/* mensagem de sucesso entra com um brilho rápido */
+.success {
+  animation: pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both, glow 1.6s ease-out;
+  transform-origin: left center;
+}
+
+@keyframes pop {
+  from { opacity: 0; transform: scale(0.4); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes glow {
+  from { text-shadow: 0 0 14px rgb(63 185 80 / 0.9); }
+  to { text-shadow: 0 0 0 transparent; }
+}
+
+@keyframes breathe {
+  50% { opacity: 0.7; }
 }
