@@ -1,3 +1,4 @@
+import { createServer } from 'node:net'
 import { networkInterfaces } from 'node:os'
 
 // interfaces virtuais que o celular nunca vai conseguir alcançar
@@ -45,4 +46,43 @@ export function getLocalIP() {
   candidates.sort((a, b) => b.points - a.points)
 
   return candidates[0]?.address ?? null
+}
+
+/**
+ * testa se dá pra escutar numa porta
+ * @param {number} port
+ * @param {string} host
+ * @returns {Promise<boolean>}
+ */
+function isPortFree(port, host) {
+  return new Promise((resolve, reject) => {
+    const server = createServer()
+
+    server.once('error', (err) => {
+      if (err.code === 'EADDRINUSE' || err.code === 'EACCES') resolve(false)
+      else reject(err)
+    })
+
+    server.once('listening', () => {
+      server.close(() => resolve(true))
+    })
+
+    server.listen(port, host)
+  })
+}
+
+/**
+ * encontra uma porta livre começando pela preferida
+ * @param {number} preferred
+ * @param {{ host?: string, attempts?: number }} options
+ * @returns {Promise<number>}
+ */
+export async function findFreePort(preferred = 8080, { host = '0.0.0.0', attempts = 20 } = {}) {
+  const last = Math.min(preferred + attempts - 1, 65535)
+
+  for (let port = preferred; port <= last; port++) {
+    if (await isPortFree(port, host)) return port
+  }
+
+  throw new Error(`nenhuma porta livre entre ${preferred} e ${last}`)
 }
