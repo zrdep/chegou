@@ -1,4 +1,5 @@
-import { extname } from 'node:path'
+import { existsSync } from 'node:fs'
+import { extname, join } from 'node:path'
 
 // caracteres proibidos no windows + caracteres de controle
 const FORBIDDEN = /[<>:"/\\|?*\u0000-\u001f\u007f]/g
@@ -35,4 +36,26 @@ export function sanitizeFilename(name) {
   if (base.length > room) base = base.slice(0, room)
 
   return base + ext
+}
+
+/**
+ * devolve um caminho que ainda não existe na pasta
+ * se "foto.jpg" já existe, tenta "foto (1).jpg", "foto (2).jpg"
+ * @param {string} dir pasta de destino
+ * @param {string} filename nome já sanitizado
+ * @returns {string} caminho completo livre
+ */
+export function uniquePath(dir, filename) {
+  const ext = extname(filename)
+  const base = ext ? filename.slice(0, -ext.length) : filename
+
+  let candidate = join(dir, filename)
+  let n = 1
+
+  while (existsSync(candidate)) {
+    candidate = join(dir, `${base} (${n})${ext}`)
+    n++
+  }
+
+  return candidate
 }
