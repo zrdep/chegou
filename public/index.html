@@ -42,6 +42,7 @@
         <p class="line dim"># selecionados</p>
         <p class="line dim" id="empty">  nenhum arquivo ainda</p>
         <ul class="files" id="file-list"></ul>
+        <p class="line dim" id="total" hidden></p>
       </div>
 
       <!-- progresso do envio -->
@@ -56,7 +57,7 @@
           aria-valuemax="100"
           aria-valuenow="0"
         >
-          <span class="bar" id="progress-bar">[░░░░░░░░░░░░░░░░]</span>
+          <span class="bar" aria-hidden="true">[<span class="track"><span class="fill-bar" id="progress-bar"></span></span>]</span>
           <span id="progress-pct">0%</span>
         </div>
         <p class="line dim" id="progress-detail"></p>
@@ -72,7 +73,7 @@
     <footer class="actions">
       <label class="btn" id="pick">
         <input type="file" id="files" multiple class="sr-only">
-        [ escolher arquivos ]
+        <span id="pick-text">[ escolher arquivos ]</span>
       </label>
       <button type="button" class="btn btn-primary" id="send" disabled>
         enviar
