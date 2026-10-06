@@ -22,25 +22,11 @@
 
 ## ▸ como funciona
 
-```
-$ chegou
+<div align="center">
 
-  chegou · esperando arquivos
+![chegou em ação: o terminal mostra o QR, o celular envia e os arquivos aparecem no PC](docs/demo.gif)
 
-  local     http://localhost:8080
-  rede      http://192.168.1.15:8080
-  pasta     ~/Downloads/chegou
-
-  ▄▄▄▄▄▄▄ ▄▄  ▄ ▄▄▄▄▄▄▄
-  █ ▄▄▄ █ ▀█▄█▀ █ ▄▄▄ █
-  █ ███ █ ▄▀▄▀▄ █ ███ █      escaneie com
-  █▄▄▄▄▄█ █ ▀ █ █▄▄▄▄▄█      o celular
-  ▄▄ ▄  ▄▄▀█▄▀▄▄  ▄▄▄ ▄
-  █▄▄▄▄▄█ ▀▄▀ █ ▀▄█▄ ▄█
-
-  chegou  foto.jpg       2.3 MB
-  chegou  contrato.pdf   812 KB
-```
+</div>
 
 1. rode `chegou` no PC
 2. escaneie o QR code com o celular
@@ -48,6 +34,18 @@ $ chegou
 4. eles caem direto na pasta do PC
 
 sem app, sem conta, sem internet. só precisa estar na mesma rede.
+
+---
+
+## ▸ telas
+
+**no PC**
+
+<img src="docs/terminal.png" alt="terminal do chegou com QR code, endereços e arquivos recebidos" width="560">
+
+**no celular**: escolhendo, enviando, concluído e erro
+
+<img src="docs/celular.png" alt="página do celular nos estados escolhendo, enviando, concluído e erro">
 
 ---
 
@@ -96,12 +94,12 @@ redes públicas costumam isolar os dispositivos entre si. não tem como contorna
 
 ## ▸ roadmap
 
-- [ ] servidor + página de envio
-- [ ] detectar o IP certo da rede
-- [ ] QR code no terminal
-- [ ] token de sessão
-- [ ] upload em streaming (arquivos grandes)
-- [ ] barra de progresso
+- [x] servidor + página de envio
+- [x] detectar o IP certo da rede
+- [x] QR code no terminal
+- [x] token de sessão
+- [x] upload em streaming (arquivos grandes)
+- [x] barra de progresso
 - [ ] mandar texto e links, não só arquivos
 - [ ] mandar do PC pro celular
 - [ ] desligar sozinho depois de X minutos
