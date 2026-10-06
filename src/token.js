@@ -1,1 +1,5 @@
-// gera o token da sessão e valida as requisições
+import { randomBytes } from 'node:crypto'
+
+export function generateToken() {
+  return randomBytes(4).toString('hex')
+}
