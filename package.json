@@ -1,6 +1,6 @@
 {
   "name": "chegou",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Arquivos entre o celular e o PC pela rede local. Um comando, um QR code, pronto.",
   "type": "module",
   "bin": {
@@ -22,9 +22,21 @@
     "upload",
     "cli",
     "mobile",
-    "local-network"
+    "local-network",
+    "share",
+    "qr",
+    "transfer",
+    "wifi"
   ],
   "author": "Pedro Randolfo",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zrdep/chegou.git"
+  },
+  "homepage": "https://github.com/zrdep/chegou#readme",
+  "bugs": {
+    "url": "https://github.com/zrdep/chegou/issues"
+  },
   "license": "MIT",
   "engines": {
     "node": ">=20"
