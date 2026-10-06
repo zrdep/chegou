@@ -393,3 +393,101 @@ body::after {
 @keyframes breathe {
   50% { opacity: 0.7; }
 }
+
+/* ---------- câmera direta ---------- */
+
+.actions-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+}
+
+.btn-camera {
+  color: var(--yellow);
+  border-color: var(--yellow);
+  white-space: nowrap;
+  padding: 14px 20px;
+}
+
+.btn-camera:active {
+  background: rgb(227 179 65 / 0.08);
+}
+
+.camera-card {
+  display: flex;
+  gap: 12px;
+  margin-top: 0.5em;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgb(255 255 255 / 0.02);
+  overflow: hidden;
+}
+
+.camera-thumb {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 6px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.camera-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+}
+
+.camera-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-height: auto !important;
+  font-size: 14px;
+}
+
+.camera-progress {
+  display: flex;
+  gap: 1ch;
+  font-size: 14px;
+}
+
+.camera-progress .track {
+  width: 10ch;
+}
+
+.camera-detail {
+  font-size: 13px;
+  min-height: auto !important;
+}
+
+.camera-card.is-done {
+  border-color: var(--green);
+  box-shadow: 0 0 20px rgb(63 185 80 / 0.1);
+}
+
+.camera-card.is-error {
+  border-color: var(--red);
+}
+
+.camera-card.is-done .camera-fill {
+  box-shadow: 0 0 12px rgb(63 185 80 / 0.6);
+}
+
+.camera-card.is-error .camera-fill {
+  background: var(--red);
+}
+
+.camera-flash {
+  animation: camera-flash 0.5s ease-out;
+}
+
+@keyframes camera-flash {
+  0% { opacity: 0; transform: scale(0.92); }
+  60% { opacity: 1; transform: scale(1.02); }
+  100% { transform: scale(1); }
+}

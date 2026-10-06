@@ -19,6 +19,20 @@ const els = {
   log: $('log'),
 }
 
+const cam = {
+  input: $('camera'),
+  btn: $('camera-btn'),
+  btnText: $('camera-btn-text'),
+  area: $('camera-area'),
+  card: $('camera-card'),
+  thumb: $('camera-thumb'),
+  name: $('camera-name'),
+  fill: $('camera-fill'),
+  pct: $('camera-pct'),
+  detail: $('camera-detail'),
+  progress: $('camera-progress'),
+}
+
 // o token vem do QR code: http://192.168.1.15:8080/?t=a8f3k2x9
 const token = new URLSearchParams(location.search).get('t') ?? ''
 
@@ -27,6 +41,7 @@ let selected = []
 
 /** idle → selecting → sending → done (ou error) */
 let state = 'idle'
+let cameraBusy = false
 
 // ---------- utilitários ----------
 
@@ -98,6 +113,8 @@ function setState(next) {
 
   els.input.disabled = busy
   els.pick.classList.toggle('is-disabled', busy)
+  cam.btn.classList.toggle('is-disabled', busy || cameraBusy)
+  cam.input.disabled = busy || cameraBusy
   els.send.disabled = busy || selected.length === 0 || next === 'done'
 
   els.pickText.textContent =
@@ -208,7 +225,7 @@ function upload(files, onProgress) {
 
 // avisa antes de fechar a página no meio do envio
 window.addEventListener('beforeunload', (event) => {
-  if (state === 'sending') event.preventDefault()
+  if (state === 'sending' || cameraBusy) event.preventDefault()
 })
 
 els.send.addEventListener('click', async () => {
@@ -250,6 +267,77 @@ els.send.addEventListener('click', async () => {
     setState('error')
   } finally {
     wakeLock?.release().catch(() => {})
+  }
+})
+
+// ---------- câmera direta ----------
+
+let cameraUrl = null
+
+function setCameraProgress(ratio) {
+  const percent = Math.floor(Math.min(1, Math.max(0, ratio)) * 100)
+  cam.fill.style.width = `${percent}%`
+  cam.pct.textContent = `${percent}%`
+}
+
+cam.input.addEventListener('change', async () => {
+  const file = cam.input.files[0]
+  if (!file || state === 'sending' || cameraBusy) return
+
+  cam.input.value = ''
+  cameraBusy = true
+
+  // preview
+  if (cameraUrl) URL.revokeObjectURL(cameraUrl)
+  cameraUrl = URL.createObjectURL(file)
+  cam.thumb.src = cameraUrl
+  cam.name.textContent = file.name
+  cam.area.hidden = false
+  cam.card.className = 'camera-card camera-flash'
+  cam.progress.hidden = false
+  cam.detail.className = 'line dim camera-detail'
+  cam.detail.textContent = ''
+  setCameraProgress(0)
+
+  // lock UI
+  els.input.disabled = true
+  els.pick.classList.add('is-disabled')
+  els.send.disabled = true
+  cam.input.disabled = true
+  cam.btn.classList.add('is-disabled')
+  cam.btnText.textContent = 'enviando...'
+  document.body.dataset.state = 'sending'
+
+  const started = performance.now()
+  const wakeLock = await navigator.wakeLock?.request('screen').catch(() => null)
+
+  try {
+    await upload([file], (loaded, total) => {
+      const seconds = (performance.now() - started) / 1000
+      const speed = seconds > 0.3 ? ` · ${formatSize(loaded / seconds)}/s` : ''
+      setCameraProgress(loaded / total)
+      cam.detail.textContent = `  ${formatSize(loaded)} de ${formatSize(total)}${speed}`
+    })
+
+    setCameraProgress(1)
+    cam.card.className = 'camera-card is-done'
+    cam.progress.hidden = true
+    cam.detail.className = 'line camera-detail ok'
+    cam.detail.textContent = '✓ foto chegou no PC'
+    log('✓ foto chegou no PC', 'ok success')
+
+  } catch (err) {
+    cam.card.className = 'camera-card is-error'
+    cam.progress.hidden = true
+    cam.detail.className = 'line camera-detail err'
+    cam.detail.textContent = `✗ ${err.message}`
+    log(`✗ ${err.message}`, 'err')
+
+  } finally {
+    wakeLock?.release().catch(() => {})
+    cameraBusy = false
+    cam.btnText.textContent = '📸 foto'
+    setState(selected.length ? 'selecting' : 'idle')
   }
 })
 

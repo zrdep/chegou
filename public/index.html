@@ -45,6 +45,22 @@
         <p class="line dim" id="total" hidden></p>
       </div>
 
+      <!-- câmera direta -->
+      <div class="block" id="camera-area" hidden>
+        <p class="line dim"># câmera → PC</p>
+        <div class="camera-card" id="camera-card">
+          <img class="camera-thumb" id="camera-thumb" alt="">
+          <div class="camera-info">
+            <p class="line camera-name" id="camera-name"></p>
+            <div class="camera-progress" id="camera-progress">
+              <span class="bar" aria-hidden="true">[<span class="track"><span class="fill-bar camera-fill" id="camera-fill"></span></span>]</span>
+              <span id="camera-pct">0%</span>
+            </div>
+            <p class="line dim camera-detail" id="camera-detail"></p>
+          </div>
+        </div>
+      </div>
+
       <!-- progresso do envio -->
       <div class="block" id="progress-area" hidden>
         <p class="line dim"># enviando</p>
@@ -71,10 +87,16 @@
     </section>
 
     <footer class="actions">
-      <label class="btn" id="pick">
-        <input type="file" id="files" multiple class="sr-only">
-        <span id="pick-text">[ escolher arquivos ]</span>
-      </label>
+      <div class="actions-row">
+        <label class="btn btn-camera" id="camera-btn">
+          <input type="file" id="camera" accept="image/*" capture="environment" class="sr-only">
+          <span id="camera-btn-text">📸 foto</span>
+        </label>
+        <label class="btn" id="pick">
+          <input type="file" id="files" multiple class="sr-only">
+          <span id="pick-text">[ escolher arquivos ]</span>
+        </label>
+      </div>
       <button type="button" class="btn btn-primary" id="send" disabled>
         enviar
       </button>
