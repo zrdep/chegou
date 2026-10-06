@@ -1,15 +1,10 @@
 <div align="center">
 
-```
-     _
- ___| |__   ___  __ _  ___  _   _ 
- / __| '_ \ / _ \/ _` |/ _ \| | | |
-| (__| | | |  __/ (_| | (_) | |_| |
- \___|_| |_|\___|\__, |\___/ \__,_|
-                 |___/
-```
+<img src="docs/banner.svg" alt="chegou" width="680">
 
-**mande arquivos do celular pro PC. um comando, um QR code, pronto.**
+<br><br>
+
+**arquivos entre o celular e o PC pela rede local. um comando, um QR code, pronto.**
 
 ![npm](https://img.shields.io/badge/npm-chegou-111?style=flat-square)
 ![node](https://img.shields.io/badge/node-%3E%3D20-111?style=flat-square)

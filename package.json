@@ -1,7 +1,7 @@
 {
   "name": "chegou",
   "version": "0.0.1",
-  "description": "Mande arquivos do celular pro PC pela rede local. Um comando, um QR code, pronto.",
+  "description": "Arquivos entre o celular e o PC pela rede local. Um comando, um QR code, pronto.",
   "type": "module",
   "bin": {
     "chegou": "bin/chegou.js"
