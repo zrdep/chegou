@@ -27,6 +27,7 @@ const HELP = `
   opções:
     --port, -p <número>   porta preferida (padrão: ${DEFAULT_PORT})
     --dir,  -d <caminho>  onde salvar os arquivos recebidos (padrão: ~/Downloads/chegou)
+    --timeout, -t <min>   desliga sozinho depois de X minutos sem uso
     --help, -h            mostra esta ajuda
 `
 
@@ -53,10 +54,10 @@ function expandHome(path) {
 /**
  * lê as flags e arquivos passados na linha de comando
  * @param {string[]} argv
- * @returns {{ port: number, dir: string, items: string[] }}
+ * @returns {{ port: number, dir: string, timeout: number, items: string[] }}
  */
 function parseArgs(argv) {
-  const options = { port: DEFAULT_PORT, dir: DEFAULT_DIR, items: [] }
+  const options = { port: DEFAULT_PORT, dir: DEFAULT_DIR, timeout: 0, items: [] }
 
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]
@@ -90,6 +91,16 @@ function parseArgs(argv) {
       case '-d':
         options.dir = expandHome(takeValue())
         break
+
+      case '--timeout':
+      case '-t': {
+        const minutes = Number(takeValue())
+        if (!Number.isFinite(minutes) || minutes <= 0) {
+          fail(`tempo inválido: ${value} (use minutos, ex: --timeout 10 ou --timeout 0.5)`)
+        }
+        options.timeout = minutes
+        break
+      }
 
       case '--help':
       case '-h':
@@ -149,6 +160,58 @@ const app = await createServer({
   onDownload: printDownloaded,
 })
 
+// ---------- desligar sozinho (--timeout) ----------
+// conta o tempo SEM uso: cada requisição zera o relógio, e nunca desliga
+// no meio de um envio. o /events fica aberto pra sempre, então não conta.
+let idleTimer = null
+let inFlight = 0
+const counted = new WeakSet()
+
+function resetIdle() {
+  if (!options.timeout) return
+  clearTimeout(idleTimer)
+  idleTimer = setTimeout(onIdle, options.timeout * 60_000)
+}
+
+function onIdle() {
+  // ainda tem upload/download rolando: espera mais um pouco
+  if (inFlight > 0) return resetIdle()
+  shutdown('timeout')
+}
+
+function finishRequest(request) {
+  if (!counted.has(request)) return
+  counted.delete(request)
+  inFlight--
+  resetIdle()
+}
+
+if (options.timeout) {
+  app.addHook('onRequest', async (request) => {
+    if (request.url.startsWith('/events')) return
+    counted.add(request)
+    inFlight++
+    resetIdle()
+  })
+  app.addHook('onResponse', async (request) => finishRequest(request))
+  app.addHook('onRequestAbort', async (request) => finishRequest(request))
+}
+
+let closing = false
+
+/**
+ * fecha o servidor e se despede
+ * @param {'ctrl+c' | 'timeout'} reason
+ */
+async function shutdown(reason) {
+  if (closing) return
+  closing = true
+  clearTimeout(idleTimer)
+  printGoodbye({ reason, minutes: options.timeout })
+  await app.close()
+  process.exit(0)
+}
+
 try {
   await app.listen({ port, host: '0.0.0.0' })
 } catch (err) {
@@ -156,7 +219,8 @@ try {
 }
 
 // 6. banner com o QR code
-printBanner({ ip, port, preferredPort: options.port, dir: options.dir, token, version })
+printBanner({ ip, port, preferredPort: options.port, dir: options.dir, token, version, timeout: options.timeout })
+resetIdle()
 
 // imprime os itens já compartilhados na inicialização
 for (const item of shareManager.getAll()) {
@@ -177,6 +241,7 @@ if (process.stdin.isTTY || !process.env.CI) {
     try {
       const added = shareManager.add(trimmed)
       printShared(added)
+      resetIdle()
     } catch (err) {
       console.log(`  ${pc.red('!')} ${err.message}`)
     }
@@ -184,8 +249,4 @@ if (process.stdin.isTTY || !process.env.CI) {
 }
 
 // 8. o servidor segura o processo aberto; aqui só fechamos direito no ctrl+c
-process.on('SIGINT', async () => {
-  printGoodbye()
-  await app.close()
-  process.exit(0)
-})
+process.on('SIGINT', () => shutdown('ctrl+c'))

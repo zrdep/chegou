@@ -103,9 +103,9 @@ function sideBySide(qr, info) {
 
 /**
  * imprime o banner de abertura
- * @param {{ ip: string | null, port: number, preferredPort: number, dir: string, token: string, version: string }} info
+ * @param {{ ip: string | null, port: number, preferredPort: number, dir: string, token: string, version: string, timeout?: number }} info
  */
-export function printBanner({ ip, port, preferredPort, dir, token, version }) {
+export function printBanner({ ip, port, preferredPort, dir, token, version, timeout = 0 }) {
   const localUrl = `http://localhost:${port}`
   const networkUrl = ip ? `http://${ip}:${port}` : null
 
@@ -118,6 +118,10 @@ export function printBanner({ ip, port, preferredPort, dir, token, version }) {
     `${pc.dim('pasta')}   ${prettyPath(dir)}`,
     `${pc.dim('token')}   ${pc.yellow(token)}`,
   ]
+
+  if (timeout) {
+    info.push(`${pc.dim('desliga')} ${formatMinutes(timeout)} sem uso`)
+  }
 
   if (port !== preferredPort) {
     info.push('', pc.yellow(`${sym.warn} porta ${preferredPort} ocupada, usando ${port}`))
@@ -197,13 +201,31 @@ export function printDownloaded({ name, size }) {
 }
 
 /**
- * imprime o resumo ao sair
+ * 10 -> "10 min", 0.5 -> "30 s", 90 -> "1 h 30 min"
+ * @param {number} minutes
+ * @returns {string}
  */
-export function printGoodbye() {
+function formatMinutes(minutes) {
+  if (minutes < 1) return `${Math.round(minutes * 60)} s`
+  if (minutes < 60) return `${+minutes.toFixed(1)} min`
+  const h = Math.floor(minutes / 60)
+  const m = Math.round(minutes % 60)
+  return m ? `${h} h ${m} min` : `${h} h`
+}
+
+/**
+ * imprime o resumo ao sair
+ * @param {{ reason?: 'ctrl+c' | 'timeout', minutes?: number }} info
+ */
+export function printGoodbye({ reason = 'ctrl+c', minutes = 0 } = {}) {
   const summary =
     stats.files === 0
       ? 'nenhum arquivo recebido'
       : `${stats.files} ${stats.files === 1 ? 'arquivo' : 'arquivos'} · ${formatSize(stats.bytes)}`
+
+  if (reason === 'timeout') {
+    console.log(`\n  ${pc.yellow(sym.warn)} ${pc.dim(`desligado por inatividade (${formatMinutes(minutes)} sem uso)`)}`)
+  }
 
   console.log(`\n  ${pc.dim('até mais ·')} ${summary}\n`)
 }
