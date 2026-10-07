@@ -396,32 +396,6 @@ body::after {
 
 /* ---------- câmera direta ---------- */
 
-.actions-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.btn-camera {
-  color: var(--yellow);
-  border-color: var(--yellow);
-  white-space: nowrap;
-}
-
-.btn-camera:active {
-  background: rgb(227 179 65 / 0.08);
-}
-
-.btn-video {
-  color: var(--cyan);
-  border-color: var(--cyan);
-  white-space: nowrap;
-}
-
-.btn-video:active {
-  background: rgb(86 212 221 / 0.08);
-}
-
 .camera-card {
   display: flex;
   gap: 12px;
@@ -616,3 +590,91 @@ body::after {
   background: rgb(227 179 65 / 0.1);
 }
 
+
+/* ---------- menu "adicionar" ---------- */
+
+/* "enviar" só aparece quando tem arquivo escolhido (ou depois de um envio) */
+[data-state='idle'] #send {
+  display: none;
+}
+
+.sheet-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: rgb(0 0 0 / 0.55);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.sheet {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  z-index: 11;
+  width: 100%;
+  max-width: 640px;
+  padding: 14px 16px calc(18px + env(safe-area-inset-bottom));
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+  border-radius: 14px 14px 0 0;
+  transform: translate(-50%, 100%);
+  transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.sheet-open .sheet-veil { opacity: 1; }
+.sheet-open .sheet { transform: translate(-50%, 0); }
+
+.sheet #sheet-title {
+  margin-bottom: 4px;
+}
+
+/* cada opção: › foto ············ tirar agora */
+.opt {
+  display: flex;
+  align-items: baseline;
+  gap: 1.2ch;
+  width: 100%;
+  min-height: 52px;
+  padding: 15px 4px;
+  font: inherit;
+  color: var(--text);
+  background: none;
+  border: 0;
+  border-bottom: 1px dashed var(--border);
+  text-align: left;
+  cursor: pointer;
+}
+
+.opt:active {
+  background: rgb(63 185 80 / 0.06);
+}
+
+.opt:focus-visible,
+.opt:has(input:focus-visible) {
+  outline: 2px solid var(--cyan);
+  outline-offset: -2px;
+}
+
+.opt-key { color: var(--green); }
+
+.opt-hint {
+  margin-left: auto;
+  color: var(--dim);
+  font-size: 13px;
+}
+
+.opt.is-disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.opt-cancel {
+  justify-content: center;
+  color: var(--dim);
+  border-bottom: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet, .sheet-veil { transition: none; }
+}

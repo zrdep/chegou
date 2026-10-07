@@ -94,24 +94,42 @@
     </section>
 
     <footer class="actions">
-      <div class="actions-row">
-        <label class="btn btn-camera" id="camera-btn">
-          <input type="file" id="camera" accept="image/*" capture="environment" class="sr-only">
-          <span id="camera-btn-text">📸 foto</span>
-        </label>
-        <label class="btn btn-video" id="video-btn">
-          <input type="file" id="camera-video" accept="video/*" capture="environment" class="sr-only">
-          <span id="video-btn-text">🎥 vídeo</span>
-        </label>
-      </div>
-      <label class="btn" id="pick">
-        <input type="file" id="files" multiple class="sr-only">
-        <span id="pick-text">[ escolher arquivos ]</span>
-      </label>
+      <button type="button" class="btn" id="add" aria-haspopup="dialog" aria-controls="sheet">
+        <span id="pick-text">[ + adicionar ]</span>
+      </button>
       <button type="button" class="btn btn-primary" id="send" disabled>
         enviar
       </button>
     </footer>
+
+    <!-- menu "adicionar": sobe de baixo -->
+    <div class="sheet-veil" id="sheet-veil" hidden></div>
+    <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title" hidden>
+      <p class="line dim" id="sheet-title"># adicionar</p>
+
+      <label class="opt" id="camera-btn">
+        <input type="file" id="camera" accept="image/*" capture="environment" class="sr-only">
+        <span class="opt-key">›</span>
+        <span class="opt-name" id="camera-btn-text">foto</span>
+        <span class="opt-hint">tirar agora</span>
+      </label>
+
+      <label class="opt" id="video-btn">
+        <input type="file" id="camera-video" accept="video/*" capture="environment" class="sr-only">
+        <span class="opt-key">›</span>
+        <span class="opt-name" id="video-btn-text">vídeo</span>
+        <span class="opt-hint">gravar agora</span>
+      </label>
+
+      <label class="opt" id="pick">
+        <input type="file" id="files" multiple class="sr-only">
+        <span class="opt-key">›</span>
+        <span class="opt-name">arquivos</span>
+        <span class="opt-hint">galeria e pastas</span>
+      </label>
+
+      <button type="button" class="opt opt-cancel" id="sheet-cancel">cancelar</button>
+    </div>
 
   </main>
 

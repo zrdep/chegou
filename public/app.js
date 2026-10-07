@@ -19,6 +19,10 @@ const els = {
   log: $('log'),
   pcArea: $('pc-area'),
   pcList: $('pc-list'),
+  add: $('add'),
+  sheet: $('sheet'),
+  veil: $('sheet-veil'),
+  cancel: $('sheet-cancel'),
 }
 
 const media = {
@@ -120,6 +124,7 @@ function setState(next) {
 
   els.input.disabled = busy
   els.pick.classList.toggle('is-disabled', busy)
+  els.add.disabled = busy
   media.photoBtn.classList.toggle('is-disabled', busy || mediaBusy)
   media.photoInput.disabled = busy || mediaBusy
   media.videoBtn.classList.toggle('is-disabled', busy || mediaBusy)
@@ -127,9 +132,9 @@ function setState(next) {
   els.send.disabled = busy || selected.length === 0 || next === 'done'
 
   els.pickText.textContent =
-    next === 'selecting' ? '[ adicionar mais ]'
-    : next === 'done' ? '[ mandar outros ]'
-    : '[ escolher arquivos ]'
+    next === 'selecting' ? '[ + adicionar mais ]'
+    : next === 'done' ? '[ + mandar outros ]'
+    : '[ + adicionar ]'
 
   els.send.textContent =
     busy ? 'enviando...'
@@ -387,8 +392,8 @@ async function handleDirectMedia(file, kind) {
   } finally {
     wakeLock?.release().catch(() => {})
     mediaBusy = false
-    media.photoBtnText.textContent = '📸 foto'
-    media.videoBtnText.textContent = '🎥 vídeo'
+    media.photoBtnText.textContent = 'foto'
+    media.videoBtnText.textContent = 'vídeo'
     media.photoInput.value = ''
     media.videoInput.value = ''
     setState(selected.length ? 'selecting' : 'idle')
@@ -404,6 +409,36 @@ media.videoInput.addEventListener('change', () => {
   const file = media.videoInput.files[0]
   if (file) handleDirectMedia(file, 'video')
 })
+
+// ---------- menu "adicionar" ----------
+
+function openSheet() {
+  els.sheet.hidden = false
+  els.veil.hidden = false
+  // espera um frame pra animação de subida rodar
+  requestAnimationFrame(() => document.body.classList.add('sheet-open'))
+}
+
+function closeSheet() {
+  document.body.classList.remove('sheet-open')
+  setTimeout(() => {
+    els.sheet.hidden = true
+    els.veil.hidden = true
+  }, 200)
+}
+
+els.add.addEventListener('click', openSheet)
+els.veil.addEventListener('click', closeSheet)
+els.cancel.addEventListener('click', closeSheet)
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !els.sheet.hidden) closeSheet()
+})
+
+// escolheu algo (ou abriu a câmera): fecha o menu
+for (const input of [els.input, media.photoInput, media.videoInput]) {
+  input.addEventListener('click', () => setTimeout(closeSheet, 300))
+}
 
 // ---------- itens do PC para você ----------
 
