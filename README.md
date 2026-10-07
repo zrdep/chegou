@@ -66,6 +66,7 @@ chegou foto.png video.mp4   # disponibiliza arquivos pro celular baixar
 chegou https://youtube.com  # manda um link ou texto pro celular
 chegou --dir ./recebidos    # escolhe onde salvar
 chegou --port 3000          # escolhe a porta
+chegou --timeout 10         # desliga sozinho depois de 10 min sem uso
 ```
 
 > **dica:** com o `chegou` rodando no terminal, basta **arrastar qualquer arquivo** pra janela dele ou digitar um texto/link e apertar Enter. O celular recebe na hora!
@@ -78,6 +79,7 @@ chegou --port 3000          # escolhe a porta
 - quem só souber o IP não consegue enviar nada
 - nomes de arquivo são sanitizados e nada é sobrescrito
 - o tráfego é HTTP na rede local: use em redes que você confia
+- com `--timeout`, o servidor desliga sozinho se ficar parado (útil se você esquecer ele aberto)
 
 ---
 
@@ -88,21 +90,6 @@ o firewall do Windows pode bloquear na primeira vez. clique em *permitir acesso*
 
 **funciona em casa mas não na faculdade/café**
 redes públicas costumam isolar os dispositivos entre si. não tem como contornar.
-
----
-
-## ▸ roadmap
-
-- [x] servidor + página de envio
-- [x] detectar o IP certo da rede
-- [x] QR code no terminal
-- [x] token de sessão
-- [x] upload em streaming (arquivos grandes)
-- [x] barra de progresso
-- [x] câmera direta: foto e gravação de vídeo celular → PC
-- [x] mandar do PC pro celular (download de arquivos)
-- [x] mandar texto e links (abrir e copiar no celular)
-- [ ] desligar sozinho depois de X minutos
 
 ---
 
