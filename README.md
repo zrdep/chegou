@@ -68,7 +68,20 @@ chegou                        # abre e espera arquivos do celular
 chegou foto.png video.mp4     # deixa esses arquivos prontos pro celular baixar
 chegou https://youtube.com    # manda um link ou texto pro celular
 chegou --timeout 10           # desliga sozinho depois de 10 min sem uso
+chegou --relay                # usa o túnel: funciona de qualquer rede
+chegou --local                # usa a rede local sem perguntar
 ```
+
+ao abrir, o chegou pergunta como o celular vai se conectar (setas + Enter, ou `1`/`2`):
+
+```
+  como o celular vai se conectar?
+
+  › 1  rede local  mesmo wi-fi · mais rápido · sem limite
+    2  túnel       qualquer rede · via Cloudflare · até 100 MB por arquivo
+```
+
+passando `--local` ou `--relay`, ele pula a pergunta.
 
 com o chegou aberto, **arraste qualquer arquivo pra janela do terminal** ou digite um texto/link e aperte Enter: o celular recebe na hora.
 
@@ -76,10 +89,25 @@ com o chegou aberto, **arraste qualquer arquivo pra janela do terminal** ou digi
 
 | opção | atalho | o que faz | padrão |
 |---|---|---|---|
+| `--relay` | `-r` | usa o túnel Cloudflare, funciona de qualquer rede (ou `--tunnel`) | pergunta |
+| `--local` | `-l` | usa a rede local, sem perguntar | pergunta |
 | `--port <número>` | `-p` | porta preferida (se estiver ocupada, usa a próxima livre) | `8080` |
 | `--dir <caminho>` | `-d` | onde salvar o que chega do celular | `~/Downloads/chegou` |
 | `--timeout <min>` | `-t` | desliga depois de X minutos sem uso (aceita `0.5` = 30 s) | desligado |
 | `--help` | `-h` | mostra a ajuda | |
+
+---
+
+## ▸ rede local ou túnel?
+
+| | rede local | túnel |
+|---|---|---|
+| quando usar | PC e celular no mesmo wi-fi | redes diferentes, 4G, wi-fi de faculdade/café |
+| velocidade | a da sua rede (rápido) | depende da internet dos dois lados |
+| limite | nenhum | 100 MB por arquivo (limite do Cloudflare) |
+| por onde passa | só pela sua rede | pelos servidores do Cloudflare, com HTTPS |
+
+no túnel, o chegou usa os [Quick Tunnels do Cloudflare](https://try.cloudflare.com) (gratuitos, sem conta). na primeira vez ele baixa o `cloudflared` (~30 MB), depois abre na hora. o endereço é aleatório e o token fica mais longo, já que a url é pública.
 
 ---
 
@@ -101,7 +129,8 @@ com o chegou aberto, **arraste qualquer arquivo pra janela do terminal** ou digi
 - o token é checado **antes** de receber qualquer byte do arquivo
 - nomes de arquivo são limpos (nada de `../../`) e nada é sobrescrito: `foto.jpg` vira `foto (1).jpg`
 - com `--timeout`, o servidor desliga sozinho se você esquecer ele aberto
-- o tráfego é **HTTP na rede local**, sem criptografia: use em redes que você confia
+- na rede local o tráfego é **HTTP**, sem criptografia: use em redes que você confia
+- no túnel o tráfego é **HTTPS**, mas passa pelos servidores do Cloudflare
 
 ---
 
@@ -152,7 +181,13 @@ cd chegou && npm install && node bin/chegou.js
 <summary><b>funciona em casa mas não na faculdade/café</b></summary>
 <br>
 
-redes públicas costumam isolar os aparelhos entre si. nesse caso não tem como contornar: use em casa, no trabalho ou roteando a internet do celular pro PC.
+redes públicas costumam isolar os aparelhos entre si (AP isolation). para esses casos, use o **modo relay**:
+
+```bash
+chegou --relay
+```
+
+ou escolha **túnel** quando o chegou perguntar. ele cria um endereço público via Cloudflare, então funciona mesmo com o PC no wi-fi da faculdade e o celular no 4G. o limite é 100 MB por arquivo.
 
 </details>
 
