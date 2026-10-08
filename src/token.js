@@ -2,10 +2,11 @@ import { randomBytes, timingSafeEqual } from 'node:crypto'
 
 /**
  * token aleatório pra sessão
+ * @param {number} bytes 4 na rede local; mais no túnel, onde a url é pública
  * @returns {string}
  */
-export function generateToken() {
-  return randomBytes(4).toString('hex')
+export function generateToken(bytes = 4) {
+  return randomBytes(bytes).toString('hex')
 }
 
 /**

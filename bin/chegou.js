@@ -9,6 +9,8 @@ import { findFreePort, getLocalIP } from '../src/network.js'
 import { createServer } from '../src/server.js'
 import { createShareManager } from '../src/share.js'
 import { generateToken } from '../src/token.js'
+import { chooseMode } from '../src/prompt.js'
+import { openTunnel } from '../src/tunnel.js'
 import { printBanner, printDownloaded, printFile, printGoodbye, printShared } from '../src/ui.js'
 
 const { version } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
@@ -23,8 +25,12 @@ const HELP = `
     chegou                      # modo padrão (receber ou arrastar arquivos)
     chegou foto.jpg video.mp4   # disponibiliza arquivos pro celular baixar
     chegou https://meusite.com  # manda link direto pro celular abrir
+    chegou --relay              # usa o túnel (funciona fora do wi-fi)
+    chegou --local              # usa a rede local sem perguntar
 
   opções:
+    --relay, --tunnel, -r túnel Cloudflare: funciona de qualquer rede (até 100 MB por arquivo)
+    --local, -l           rede local, sem perguntar
     --port, -p <número>   porta preferida (padrão: ${DEFAULT_PORT})
     --dir,  -d <caminho>  onde salvar os arquivos recebidos (padrão: ~/Downloads/chegou)
     --timeout, -t <min>   desliga sozinho depois de X minutos sem uso
@@ -34,9 +40,10 @@ const HELP = `
 /**
  * encerra com uma mensagem de erro
  * @param {string} message
+ * @param {boolean} showHelp mostra a ajuda (só faz sentido em erro de digitação)
  */
-function fail(message) {
-  console.error(`\n  ${pc.red('erro:')} ${message}\n${pc.dim(HELP)}`)
+function fail(message, showHelp = true) {
+  console.error(`\n  ${pc.red('erro:')} ${message}\n${showHelp ? pc.dim(HELP) : ''}`)
   process.exit(1)
 }
 
@@ -54,10 +61,10 @@ function expandHome(path) {
 /**
  * lê as flags e arquivos passados na linha de comando
  * @param {string[]} argv
- * @returns {{ port: number, dir: string, timeout: number, items: string[] }}
+ * @returns {{ port: number, dir: string, timeout: number, mode: 'local' | 'tunnel' | null, items: string[] }}
  */
 function parseArgs(argv) {
-  const options = { port: DEFAULT_PORT, dir: DEFAULT_DIR, timeout: 0, items: [] }
+  const options = { port: DEFAULT_PORT, dir: DEFAULT_DIR, timeout: 0, mode: null, items: [] }
 
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]
@@ -77,6 +84,17 @@ function parseArgs(argv) {
     }
 
     switch (flag) {
+      case '--relay':
+      case '--tunnel':
+      case '-r':
+        options.mode = 'tunnel'
+        break
+
+      case '--local':
+      case '-l':
+        options.mode = 'local'
+        break
+
       case '--port':
       case '-p': {
         const port = Number(takeValue())
@@ -126,11 +144,18 @@ try {
   fail(`não consegui criar a pasta ${options.dir} (${err.code})`)
 }
 
-// 1. token da sessão
-const token = generateToken()
 
 // 2. IP da rede local
 const ip = getLocalIP()
+
+// modo de conexão: flag manda; sem flag, pergunta (se tiver alguém no terminal)
+let mode = options.mode
+if (!mode) {
+  mode = process.stdin.isTTY && process.stdout.isTTY ? await chooseMode({ hasLan: Boolean(ip) }) : 'local'
+}
+
+// token da sessão: no túnel a url é pública, então o token fica mais longo
+const token = generateToken(mode === 'tunnel' ? 8 : 4)
 
 // 3. porta livre a partir da preferida
 let port
@@ -198,6 +223,7 @@ if (options.timeout) {
 }
 
 let closing = false
+let tunnel = null
 
 /**
  * fecha o servidor e se despede
@@ -208,6 +234,9 @@ async function shutdown(reason) {
   closing = true
   clearTimeout(idleTimer)
   printGoodbye({ reason, minutes: options.timeout })
+  if (tunnel) {
+    await tunnel.close()
+  }
   await app.close()
   process.exit(0)
 }
@@ -215,11 +244,36 @@ async function shutdown(reason) {
 try {
   await app.listen({ port, host: '0.0.0.0' })
 } catch (err) {
-  fail(`não consegui iniciar o servidor (${err.code ?? err.message})`)
+  fail(`não consegui iniciar o servidor (${err.code ?? err.message})`, false)
 }
 
-// 6. banner com o QR code
-printBanner({ ip, port, preferredPort: options.port, dir: options.dir, token, version, timeout: options.timeout })
+// 6. túnel Cloudflare (modo túnel)
+let relayUrl = null
+if (mode === 'tunnel') {
+  const status = (message) => process.stdout.write(`\r\x1b[2K  ${pc.cyan('●')} ${pc.dim(message)}`)
+  try {
+    tunnel = await openTunnel(port, { onStatus: status })
+    relayUrl = tunnel.url
+    process.stdout.write('\r\x1b[2K')
+  } catch (err) {
+    process.stdout.write('\r\x1b[2K')
+    if (!ip) fail(`não consegui abrir o túnel (${err.message}) e o PC não está em nenhuma rede local`, false)
+    console.log(`  ${pc.yellow('!')} não consegui abrir o túnel (${err.message}), seguindo na rede local`)
+    mode = 'local'
+  }
+}
+
+// 7. banner com o QR code
+printBanner({
+  ip,
+  port,
+  preferredPort: options.port,
+  dir: options.dir,
+  token,
+  version,
+  timeout: options.timeout,
+  relayUrl,
+})
 resetIdle()
 
 // imprime os itens já compartilhados na inicialização
@@ -227,7 +281,7 @@ for (const item of shareManager.getAll()) {
   printShared(item)
 }
 
-// 7. ouve o terminal interativo: arraste arquivos ou digite link/texto + enter
+// 8. ouve o terminal interativo: arraste arquivos ou digite link/texto + enter
 if (process.stdin.isTTY || !process.env.CI) {
   const rl = createInterface({
     input: process.stdin,

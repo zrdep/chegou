@@ -103,24 +103,35 @@ function sideBySide(qr, info) {
 
 /**
  * imprime o banner de abertura
- * @param {{ ip: string | null, port: number, preferredPort: number, dir: string, token: string, version: string, timeout?: number }} info
+ * @param {{ ip: string | null, port: number, preferredPort: number, dir: string, token: string, version: string, timeout?: number, relayUrl?: string | null }} info
  */
-export function printBanner({ ip, port, preferredPort, dir, token, version, timeout = 0 }) {
+export function printBanner({ ip, port, preferredPort, dir, token, version, timeout = 0, relayUrl = null }) {
   const localUrl = `http://localhost:${port}`
   const networkUrl = ip ? `http://${ip}:${port}` : null
 
   const info = [
-    `${pc.green(sym.dot)} ${pc.bold('chegou')}`,
+    `${pc.green(sym.dot)} ${pc.bold('chegou')}${relayUrl ? ` ${pc.cyan('· túnel')}` : ''}`,
     pc.dim('esperando arquivos'),
     '',
-    `${pc.dim('rede ')}   ${networkUrl ? pc.bold(pc.cyan(networkUrl)) : pc.yellow('sem wi-fi/cabo')}`,
-    `${pc.dim('local')}   ${pc.cyan(localUrl)}`,
-    `${pc.dim('pasta')}   ${prettyPath(dir)}`,
-    `${pc.dim('token')}   ${pc.yellow(token)}`,
   ]
+
+  if (relayUrl) {
+    info.push(`${pc.dim('túnel ')}   ${pc.bold(pc.cyan(relayUrl.replace('https://', '')))}`)
+  }
+
+  info.push(
+    `${pc.dim('rede  ')}   ${networkUrl ? (relayUrl ? pc.dim(networkUrl) : pc.bold(pc.cyan(networkUrl))) : pc.yellow('sem wi-fi/cabo')}`,
+    `${pc.dim('local ')}   ${pc.dim(localUrl)}`,
+    `${pc.dim('pasta ')}   ${prettyPath(dir)}`,
+    `${pc.dim('token ')}   ${pc.yellow(token)}`,
+  )
 
   if (timeout) {
     info.push(`${pc.dim('desliga')} ${formatMinutes(timeout)} sem uso`)
+  }
+
+  if (relayUrl) {
+    info.push('', pc.yellow(`${sym.warn} até 100 MB por arquivo no túnel`))
   }
 
   if (port !== preferredPort) {
@@ -129,15 +140,22 @@ export function printBanner({ ip, port, preferredPort, dir, token, version, time
 
   info.push(
     '',
-    pc.dim(networkUrl ? 'escaneie o QR com o celular' : 'conecte o PC na rede pra usar no celular'),
+    pc.dim(
+      relayUrl
+        ? 'escaneie o QR · funciona de qualquer rede'
+        : networkUrl
+          ? 'escaneie o QR com o celular'
+          : 'conecte o PC na rede pra usar no celular'
+    ),
     pc.dim('arraste arquivos aqui ou digite link + Enter'),
     pc.dim('ctrl+c para sair'),
   )
 
   let lines = info
 
-  if (networkUrl) {
-    const qr = renderQR(`${networkUrl}/?t=${token}`)
+  const targetUrl = relayUrl || networkUrl
+  if (targetUrl) {
+    const qr = renderQR(`${targetUrl}/?t=${token}`)
     const combined = sideBySide(qr, info)
     const width = Math.max(...combined.map(visibleLength)) + 12
     const columns = process.stdout.columns ?? 80
@@ -147,7 +165,7 @@ export function printBanner({ ip, port, preferredPort, dir, token, version, time
   }
 
   console.log()
-  console.log(box(lines, `chegou v${version}`))
+  console.log(box(lines, `chegou v${version}${relayUrl ? ' · túnel' : ''}`))
   console.log()
   console.log(pc.dim(`  ${sym.h.repeat(2)} atividade ${sym.h.repeat(40)}`))
   console.log()
