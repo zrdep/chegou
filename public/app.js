@@ -47,6 +47,10 @@ const media = {
 // o token vem do QR code: http://192.168.1.15:8080/?t=a8f3k2x9
 const token = new URLSearchParams(location.search).get('t') ?? ''
 
+// pelo túnel do Cloudflare cada requisição pode ter no máximo 100 MB
+const isRelay = location.hostname.endsWith('.trycloudflare.com')
+const RELAY_MAX_BYTES = 100 * 1024 * 1024 - 64 * 1024 // folga pro cabeçalho do multipart
+
 /** @type {File[]} */
 let selected = []
 
@@ -225,7 +229,7 @@ function upload(files, onProgress) {
 
       const messages = {
         401: 'token inválido · escaneie o QR code de novo',
-        413: body.error ?? 'arquivo grande demais',
+        413: body.error ?? (isRelay ? 'arquivo passou de 100 MB, o limite do túnel' : 'arquivo grande demais'),
       }
       reject(new Error(messages[xhr.status] ?? body.error ?? `erro ${xhr.status} no PC`))
     })
@@ -235,6 +239,37 @@ function upload(files, onProgress) {
 
     xhr.send(form)
   })
+}
+
+/**
+ * na rede local manda tudo de uma vez; no túnel, um arquivo por requisição
+ * (o limite de 100 MB é por requisição) e recusa antes quem passar do limite
+ * @param {File[]} files
+ * @param {(loaded: number, total: number) => void} onProgress
+ * @returns {Promise<{ files: { name: string, size: number }[] }>}
+ */
+async function uploadSmart(files, onProgress) {
+  if (!isRelay) return upload(files, onProgress)
+
+  const tooBig = files.filter((file) => file.size > RELAY_MAX_BYTES)
+  if (tooBig.length) {
+    const names = tooBig.map((file) => `${file.name} (${formatSize(file.size)})`).join(', ')
+    const err = new Error(`passa de 100 MB, o limite do túnel: ${names} · use a rede local pra esse`)
+    err.beforeUpload = true
+    throw err
+  }
+
+  const total = files.reduce((sum, file) => sum + file.size, 0)
+  const saved = []
+  let done = 0
+
+  for (const file of files) {
+    const result = await upload([file], (loaded) => onProgress(done + Math.min(loaded, file.size), total))
+    saved.push(...(result.files ?? []))
+    done += file.size
+  }
+
+  return { files: saved }
 }
 
 // avisa antes de fechar a página no meio do envio
@@ -256,7 +291,7 @@ els.send.addEventListener('click', async () => {
   const wakeLock = await navigator.wakeLock?.request('screen').catch(() => null)
 
   try {
-    const result = await upload(selected, (loaded, total) => {
+    const result = await uploadSmart(selected, (loaded, total) => {
       const seconds = (performance.now() - started) / 1000
       const speed = seconds > 0.3 ? ` · ${formatSize(loaded / seconds)}/s` : ''
 
@@ -276,6 +311,7 @@ els.send.addEventListener('click', async () => {
     log(`✓ ${plural(count)} ${count === 1 ? 'chegou' : 'chegaram'} no PC`, 'ok success')
     setState('done')
   } catch (err) {
+    if (err.beforeUpload) els.progressArea.hidden = true
     els.list.querySelectorAll('li').forEach((item) => item.classList.add('failed'))
     log(`✗ ${err.message}`, 'err')
     setState('error')
@@ -368,7 +404,7 @@ async function handleDirectMedia(file, kind) {
   const label = isVideo ? 'vídeo' : 'foto'
 
   try {
-    await upload([uploadFile], (loaded, total) => {
+    await uploadSmart([uploadFile], (loaded, total) => {
       const seconds = (performance.now() - started) / 1000
       const speed = seconds > 0.3 ? ` · ${formatSize(loaded / seconds)}/s` : ''
       setMediaProgress(loaded / total)
@@ -543,7 +579,12 @@ function initPcStream() {
 
 // ---------- início ----------
 
-els.host.textContent = `chegou · ${location.hostname}`
+els.host.textContent = isRelay ? 'chegou · túnel' : `chegou · ${location.hostname}`
+
+if (isRelay) {
+  $('connected-status').textContent = 'conectado pelo túnel'
+  $('connected-sub').textContent = '  qualquer rede · até 100 MB'
+}
 
 if (!token) {
   log('! sem token na url · escaneie o QR code do terminal', 'warn')
