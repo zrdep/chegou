@@ -52,11 +52,19 @@ export async function createServer({ port, dir, token, onFile, shareManager, onD
   app.get('/events', {
     onRequest: createTokenGuard(token),
     handler: (request, reply) => {
-      reply.raw.setHeader('Content-Type', 'text/event-stream')
-      reply.raw.setHeader('Cache-Control', 'no-cache, no-transform')
-      reply.raw.setHeader('Connection', 'keep-alive')
-      reply.raw.setHeader('Access-Control-Allow-Origin', '*')
-      reply.raw.flushHeaders?.()
+      // a partir daqui a conexão é nossa: o fastify não tenta fechar nem responder
+      reply.hijack()
+      reply.raw.writeHead(200, {
+        'Content-Type': 'text/event-stream; charset=utf-8',
+        'Cache-Control': 'no-cache, no-transform',
+        Connection: 'keep-alive',
+        // proxies (e o túnel do Cloudflare) não podem segurar os eventos
+        'X-Accel-Buffering': 'no',
+      })
+      request.raw.socket?.setNoDelay?.(true)
+
+      // se cair, o navegador tenta de novo em 2 s
+      reply.raw.write('retry: 2000\n\n')
 
       // envia os itens que já existem de início
       const initial = shareManager ? shareManager.getPublicItems(token) : []
@@ -69,7 +77,12 @@ export async function createServer({ port, dir, token, onFile, shareManager, onD
 
       shareManager?.subscribe(onNewItem)
 
+      // "batimento" a cada 15 s: impede que roteador, celular ou Cloudflare
+      // derrubem a conexão parada (o Cloudflare corta em ~100 s sem tráfego)
+      const heartbeat = setInterval(() => reply.raw.write(': ping\n\n'), 15_000)
+
       request.raw.on('close', () => {
+        clearInterval(heartbeat)
         shareManager?.unsubscribe(onNewItem)
       })
     },

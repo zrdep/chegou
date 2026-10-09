@@ -559,10 +559,13 @@ function renderPcItem(item, isNew = false) {
   return li
 }
 
+let sse = null
+
 function initPcStream() {
   if (!token) return
 
-  const sse = new EventSource(`/events?t=${encodeURIComponent(token)}`)
+  sse?.close()
+  sse = new EventSource(`/events?t=${encodeURIComponent(token)}`)
 
   sse.addEventListener('init', (e) => {
     try {
@@ -594,9 +597,17 @@ function initPcStream() {
   })
 
   sse.addEventListener('error', () => {
-    // EventSource reconecta automaticamente
+    // o EventSource tenta de novo sozinho; se desistir (CLOSED), a gente reabre
+    if (sse.readyState === EventSource.CLOSED) setTimeout(initPcStream, 2000)
   })
 }
+
+// celular bloqueou a tela ou trocou de app: a conexão costuma cair calada.
+// ao voltar pra página, reabre na hora e recebe tudo que chegou enquanto isso
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') initPcStream()
+})
+window.addEventListener('online', () => initPcStream())
 
 // ---------- início ----------
 
