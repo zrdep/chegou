@@ -33,27 +33,27 @@
       <!-- abertura -->
       <div class="boot">
         <p class="line" style="--i: 0"><span class="prompt">$</span><span class="typed">chegou</span></p>
-        <p class="line" style="--i: 2"><span class="ok">●</span> <span id="connected-status">conectado ao PC</span></p>
-        <p class="line dim" style="--i: 3" id="connected-sub">  pronto pra trocar arquivos</p>
+        <p class="line" style="--i: 2"><span class="ok">●</span> <span id="connected-status" data-i18n="boot.connected">conectado ao PC</span></p>
+        <p class="line dim" style="--i: 3" id="connected-sub" data-i18n="boot.ready">  pronto pra trocar arquivos</p>
       </div>
 
       <!-- itens do PC para você -->
       <div class="block" id="pc-area" hidden>
-        <p class="line dim"># do PC → você</p>
+        <p class="line dim" data-i18n="sections.fromPc"># do PC → você</p>
         <ul class="pc-list" id="pc-list"></ul>
       </div>
 
       <!-- arquivos escolhidos -->
       <div class="block" style="--i: 4">
-        <p class="line dim"># enviar para o PC</p>
-        <p class="line dim" id="empty">  nenhum arquivo ainda</p>
+        <p class="line dim" data-i18n="sections.toPc"># enviar para o PC</p>
+        <p class="line dim" id="empty" data-i18n="sections.empty">  nenhum arquivo ainda</p>
         <ul class="files" id="file-list"></ul>
         <p class="line dim" id="total" hidden></p>
       </div>
 
       <!-- câmera / vídeo direto -->
       <div class="block" id="camera-area" hidden>
-        <p class="line dim" id="camera-title"># câmera → PC</p>
+        <p class="line dim" id="camera-title" data-i18n="sections.camera"># câmera → PC</p>
         <div class="camera-card" id="camera-card">
           <img class="camera-thumb" id="camera-thumb" alt="" hidden>
           <video class="camera-thumb" id="camera-video-thumb" playsinline muted autoplay loop hidden></video>
@@ -70,12 +70,13 @@
 
       <!-- progresso do envio -->
       <div class="block" id="progress-area" hidden>
-        <p class="line dim"># enviando</p>
+        <p class="line dim" data-i18n="sections.sending"># enviando</p>
         <div
           class="line progress"
           id="progress"
           role="progressbar"
           aria-label="progresso do envio"
+          data-i18n-aria="sections.progressLabel"
           aria-valuemin="0"
           aria-valuemax="100"
           aria-valuenow="0"
@@ -95,44 +96,46 @@
 
     <footer class="actions">
       <button type="button" class="btn" id="add" aria-haspopup="dialog" aria-controls="sheet">
-        <span id="pick-text">[ + adicionar ]</span>
+        <span id="pick-text" data-i18n="buttons.add">[ + adicionar ]</span>
       </button>
-      <button type="button" class="btn btn-primary" id="send" disabled>
-        enviar
-      </button>
+      <button type="button" class="btn btn-primary" id="send" disabled data-i18n="buttons.send">enviar</button>
     </footer>
 
     <!-- menu "adicionar": sobe de baixo -->
     <div class="sheet-veil" id="sheet-veil" hidden></div>
     <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title" hidden>
-      <p class="line dim" id="sheet-title"># adicionar</p>
+      <p class="line dim" id="sheet-title" data-i18n="sheet.title"># adicionar</p>
 
       <label class="opt" id="camera-btn">
         <input type="file" id="camera" accept="image/*" capture="environment" class="sr-only">
         <span class="opt-key">›</span>
-        <span class="opt-name" id="camera-btn-text">foto</span>
-        <span class="opt-hint">tirar agora</span>
+        <span class="opt-name" id="camera-btn-text" data-i18n="sheet.photo">foto</span>
+        <span class="opt-hint" data-i18n="sheet.photoHint">tirar agora</span>
       </label>
 
       <label class="opt" id="video-btn">
         <input type="file" id="camera-video" accept="video/*" capture="environment" class="sr-only">
         <span class="opt-key">›</span>
-        <span class="opt-name" id="video-btn-text">vídeo</span>
-        <span class="opt-hint">gravar agora</span>
+        <span class="opt-name" id="video-btn-text" data-i18n="sheet.video">vídeo</span>
+        <span class="opt-hint" data-i18n="sheet.videoHint">gravar agora</span>
       </label>
 
       <label class="opt" id="pick">
         <input type="file" id="files" multiple class="sr-only">
         <span class="opt-key">›</span>
-        <span class="opt-name">arquivos</span>
-        <span class="opt-hint">galeria e pastas</span>
+        <span class="opt-name" data-i18n="sheet.files">arquivos</span>
+        <span class="opt-hint" data-i18n="sheet.filesHint">galeria e pastas</span>
       </label>
 
-      <button type="button" class="opt opt-cancel" id="sheet-cancel">cancelar</button>
+      <button type="button" class="opt opt-cancel" id="sheet-cancel" data-i18n="sheet.cancel">cancelar</button>
     </div>
 
   </main>
 
+  <!-- traduções: um arquivo por idioma, depois o tradutor, depois o app -->
+  <script src="i18n/pt.js"></script>
+  <script src="i18n/en.js"></script>
+  <script src="i18n/index.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

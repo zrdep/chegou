@@ -1,5 +1,7 @@
 // seleção de arquivos, envio e barra de progresso
+// os textos vêm de public/i18n/ (t = tradução no idioma do celular)
 
+const { t } = window.i18n
 const $ = (id) => document.getElementById(id)
 
 const els = {
@@ -50,6 +52,7 @@ const token = new URLSearchParams(location.search).get('t') ?? ''
 // pelo túnel do Cloudflare cada requisição pode ter no máximo 100 MB
 const isRelay = location.hostname.endsWith('.trycloudflare.com')
 const RELAY_MAX_BYTES = 100 * 1024 * 1024 - 64 * 1024 // folga pro cabeçalho do multipart
+const REPO_URL = 'https://github.com/zrdep/chegou'
 
 /** @type {File[]} */
 let selected = []
@@ -83,7 +86,7 @@ function formatSize(bytes) {
  * @returns {string}
  */
 function plural(n) {
-  return `${n} ${n === 1 ? 'arquivo' : 'arquivos'}`
+  return t('files', { n })
 }
 
 /**
@@ -136,16 +139,16 @@ function setState(next) {
   els.send.disabled = busy || selected.length === 0 || next === 'done'
 
   els.pickText.textContent =
-    next === 'selecting' ? '[ + adicionar mais ]'
-    : next === 'done' ? '[ + mandar outros ]'
-    : '[ + adicionar ]'
+    next === 'selecting' ? t('buttons.addMore')
+    : next === 'done' ? t('buttons.sendOthers')
+    : t('buttons.add')
 
   els.send.textContent =
-    busy ? 'enviando...'
-    : next === 'done' ? 'enviado ✓'
-    : next === 'error' ? 'tentar de novo'
-    : selected.length ? `enviar ${plural(selected.length)} · ${formatSize(totalBytes)}`
-    : 'enviar'
+    busy ? t('buttons.sending')
+    : next === 'done' ? t('buttons.sent')
+    : next === 'error' ? t('buttons.retry')
+    : selected.length ? t('buttons.sendFiles', { files: plural(selected.length), size: formatSize(totalBytes) })
+    : t('buttons.send')
 }
 
 // ---------- lista de arquivos ----------
@@ -227,15 +230,16 @@ function upload(files, onProgress) {
       const body = xhr.response ?? {}
       if (xhr.status >= 200 && xhr.status < 300) return resolve(body)
 
+      // o PC responde com um código; a mensagem sai no idioma do celular
       const messages = {
-        401: 'token inválido · escaneie o QR code de novo',
-        413: body.error ?? (isRelay ? 'arquivo passou de 100 MB, o limite do túnel' : 'arquivo grande demais'),
+        401: t('errors.unauthorized'),
+        413: isRelay ? t('errors.tooLargeTunnel') : t('errors.tooLarge'),
       }
-      reject(new Error(messages[xhr.status] ?? body.error ?? `erro ${xhr.status} no PC`))
+      reject(new Error(messages[xhr.status] ?? t('errors.http', { status: xhr.status })))
     })
 
-    xhr.addEventListener('error', () => reject(new Error('conexão perdida · o PC ainda está rodando o chegou?')))
-    xhr.addEventListener('abort', () => reject(new Error('envio cancelado')))
+    xhr.addEventListener('error', () => reject(new Error(t('errors.network'))))
+    xhr.addEventListener('abort', () => reject(new Error(t('errors.aborted'))))
 
     xhr.send(form)
   })
@@ -254,7 +258,7 @@ async function uploadSmart(files, onProgress) {
   const tooBig = files.filter((file) => file.size > RELAY_MAX_BYTES)
   if (tooBig.length) {
     const names = tooBig.map((file) => `${file.name} (${formatSize(file.size)})`).join(', ')
-    const err = new Error(`passa de 100 MB, o limite do túnel: ${names} · use a rede local pra esse`)
+    const err = new Error(t('errors.tunnelLimit', { names }))
     err.beforeUpload = true
     throw err
   }
@@ -281,9 +285,9 @@ function showStar() {
   if (starShown) return
   starShown = true
 
-  const line = el('p', 'line dim star', 'curtiu? deixa uma ')
-  const link = el('a', '', '★ no github')
-  link.href = 'https://github.com/zrdep/chegou'
+  const line = el('p', 'line dim star', t('star.text'))
+  const link = el('a', '', t('star.link'))
+  link.href = REPO_URL
   link.target = '_blank'
   link.rel = 'noopener'
   line.append(link)
@@ -315,7 +319,7 @@ els.send.addEventListener('click', async () => {
       const speed = seconds > 0.3 ? ` · ${formatSize(loaded / seconds)}/s` : ''
 
       setProgress(loaded / total)
-      els.detail.textContent = `  ${formatSize(loaded)} de ${formatSize(total)}${speed}`
+      els.detail.textContent = t('progress', { done: formatSize(loaded), total: formatSize(total), speed })
     })
 
     setProgress(1)
@@ -327,7 +331,7 @@ els.send.addEventListener('click', async () => {
     })
 
     const count = result.files?.length ?? selected.length
-    log(`✓ ${plural(count)} ${count === 1 ? 'chegou' : 'chegaram'} no PC`, 'ok success')
+    log(t('done.arrived', { n: count }), 'ok success')
     showStar()
     setState('done')
   } catch (err) {
@@ -386,13 +390,13 @@ async function handleDirectMedia(file, kind) {
     media.videoThumb.hidden = false
     media.videoThumb.src = mediaUrl
     media.videoThumb.play().catch(() => {})
-    media.title.textContent = '# vídeo → PC'
+    media.title.textContent = t('sections.videoToPc')
   } else {
     media.videoThumb.hidden = true
     media.videoThumb.pause?.()
     media.thumb.hidden = false
     media.thumb.src = mediaUrl
-    media.title.textContent = '# foto → PC'
+    media.title.textContent = t('sections.photoToPc')
   }
 
   media.name.textContent = uploadFile.name
@@ -413,30 +417,30 @@ async function handleDirectMedia(file, kind) {
   media.videoBtn.classList.add('is-disabled')
 
   if (isVideo) {
-    media.videoBtnText.textContent = 'enviando...'
+    media.videoBtnText.textContent = t('buttons.sending')
   } else {
-    media.photoBtnText.textContent = 'enviando...'
+    media.photoBtnText.textContent = t('buttons.sending')
   }
   document.body.dataset.state = 'sending'
 
   const started = performance.now()
   const wakeLock = await navigator.wakeLock?.request('screen').catch(() => null)
-  const label = isVideo ? 'vídeo' : 'foto'
+  const doneText = isVideo ? t('done.video') : t('done.photo')
 
   try {
     await uploadSmart([uploadFile], (loaded, total) => {
       const seconds = (performance.now() - started) / 1000
       const speed = seconds > 0.3 ? ` · ${formatSize(loaded / seconds)}/s` : ''
       setMediaProgress(loaded / total)
-      media.detail.textContent = `  ${formatSize(loaded)} de ${formatSize(total)}${speed}`
+      media.detail.textContent = t('progress', { done: formatSize(loaded), total: formatSize(total), speed })
     })
 
     setMediaProgress(1)
     media.card.className = 'camera-card is-done'
     media.progress.hidden = true
     media.detail.className = 'line camera-detail ok'
-    media.detail.textContent = `✓ ${label} chegou no PC`
-    log(`✓ ${label} chegou no PC`, 'ok success')
+    media.detail.textContent = doneText
+    log(doneText, 'ok success')
     showStar()
 
   } catch (err) {
@@ -449,8 +453,8 @@ async function handleDirectMedia(file, kind) {
   } finally {
     wakeLock?.release().catch(() => {})
     mediaBusy = false
-    media.photoBtnText.textContent = 'foto'
-    media.videoBtnText.textContent = 'vídeo'
+    media.photoBtnText.textContent = t('sheet.photo')
+    media.videoBtnText.textContent = t('sheet.video')
     media.photoInput.value = ''
     media.videoInput.value = ''
     setState(selected.length ? 'selecting' : 'idle')
@@ -518,7 +522,7 @@ function renderPcItem(item, isNew = false) {
     downloadLink.className = 'btn-pc-action btn-pc-download'
     downloadLink.href = item.downloadUrl || `/download/${item.id}?t=${encodeURIComponent(token)}`
     downloadLink.download = item.name
-    downloadLink.textContent = '[ baixar ]'
+    downloadLink.textContent = t('pc.download')
     actions.append(downloadLink)
 
     li.append(info, actions)
@@ -531,14 +535,14 @@ function renderPcItem(item, isNew = false) {
     const copyBtn = document.createElement('button')
     copyBtn.type = 'button'
     copyBtn.className = 'btn-pc-action btn-pc-copy'
-    copyBtn.textContent = '[ copiar ]'
+    copyBtn.textContent = t('pc.copy')
     copyBtn.addEventListener('click', async () => {
       try {
         await navigator.clipboard.writeText(item.content)
-        copyBtn.textContent = 'copiado ✓'
-        setTimeout(() => { copyBtn.textContent = '[ copiar ]' }, 2000)
+        copyBtn.textContent = t('pc.copied')
+        setTimeout(() => { copyBtn.textContent = t('pc.copy') }, 2000)
       } catch {
-        prompt('Copie o texto abaixo:', item.content)
+        prompt(t('pc.copyPrompt'), item.content)
       }
     })
     actions.append(copyBtn)
@@ -549,7 +553,7 @@ function renderPcItem(item, isNew = false) {
       openLink.href = item.content
       openLink.target = '_blank'
       openLink.rel = 'noopener noreferrer'
-      openLink.textContent = '[ abrir ]'
+      openLink.textContent = t('pc.open')
       actions.append(openLink)
     }
 
@@ -591,7 +595,7 @@ function initPcStream() {
 
       const label = item.type === 'file' ? item.name : item.content
       const short = label.length > 25 ? `${label.slice(0, 24)}…` : label
-      log(`✓ novo do PC: ${short}`, 'ok success')
+      log(t('pc.new', { name: short }), 'ok success')
       navigator.vibrate?.(80)
     } catch {}
   })
@@ -611,15 +615,15 @@ window.addEventListener('online', () => initPcStream())
 
 // ---------- início ----------
 
-els.host.textContent = isRelay ? 'chegou · túnel' : `chegou · ${location.hostname}`
+els.host.textContent = isRelay ? t('boot.hostTunnel') : `chegou · ${location.hostname}`
 
 if (isRelay) {
-  $('connected-status').textContent = 'conectado pelo túnel'
-  $('connected-sub').textContent = '  qualquer rede · até 100 MB'
+  $('connected-status').textContent = t('boot.connectedTunnel')
+  $('connected-sub').textContent = t('boot.readyTunnel')
 }
 
 if (!token) {
-  log('! sem token na url · escaneie o QR code do terminal', 'warn')
+  log(t('errors.noToken'), 'warn')
 } else {
   initPcStream()
 }
