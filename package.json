@@ -1,6 +1,6 @@
 {
   "name": "chegou",
-  "version": "1.5.3",
+  "version": "1.6.0",
   "description": "Move files between your phone and your PC over the local network. One command, one QR code, done.",
   "type": "module",
   "bin": {
