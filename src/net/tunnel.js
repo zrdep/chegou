@@ -2,12 +2,10 @@ import { existsSync, readdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { startTunnel } from 'untun'
+import { t } from '../i18n/index.js'
 
 // o untun guarda o cloudflared aqui depois de baixar
 const CLOUDFLARED_DIR = join(tmpdir(), 'node-untun')
-
-// limite de corpo de requisição do Cloudflare no plano gratuito
-export const RELAY_MAX_BYTES = 100 * 1024 * 1024
 
 /**
  * o binário do cloudflared já foi baixado alguma vez?
@@ -65,7 +63,7 @@ async function waitUntilReachable(url, ms) {
  */
 export async function openTunnel(port, { onStatus = () => {} } = {}) {
   const firstRun = !hasCloudflared()
-  onStatus(firstRun ? 'baixando o cloudflared (~30 MB, só na primeira vez)...' : 'abrindo túnel...')
+  onStatus(firstRun ? t('tunnel.downloading') : t('tunnel.opening'))
 
   // o untun escreve logs em inglês no console; silencia pra manter o terminal limpo
   const originalLog = console.log
@@ -76,15 +74,15 @@ export async function openTunnel(port, { onStatus = () => {} } = {}) {
     tunnel = await withTimeout(
       startTunnel({ port, hostname: '127.0.0.1', acceptCloudflareNotice: true }),
       firstRun ? 180_000 : 30_000,
-      'o Cloudflare demorou demais pra responder',
+      t('tunnel.slow'),
     )
-    if (!tunnel) throw new Error('não foi possível iniciar o cloudflared')
+    if (!tunnel) throw new Error(t('tunnel.failed'))
 
-    const url = await withTimeout(Promise.resolve(tunnel.getURL()), 30_000, 'o Cloudflare não devolveu um endereço')
-    if (!url) throw new Error('o Cloudflare não devolveu um endereço')
+    const url = await withTimeout(Promise.resolve(tunnel.getURL()), 30_000, t('tunnel.noUrl'))
+    if (!url) throw new Error(t('tunnel.noUrl'))
 
     console.log = originalLog
-    onStatus('esperando o endereço ficar no ar...')
+    onStatus(t('tunnel.waiting'))
     await waitUntilReachable(url, 20_000)
 
     return {

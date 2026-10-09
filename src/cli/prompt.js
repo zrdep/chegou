@@ -1,16 +1,19 @@
+// pergunta no terminal como o celular vai se conectar (setas + Enter, ou 1/2)
+
 import { emitKeypressEvents } from 'node:readline'
 import pc from 'picocolors'
+import { t } from '../i18n/index.js'
 
 /**
- * pergunta no terminal como o celular vai se conectar (setas + Enter, ou 1/2)
  * @param {{ hasLan: boolean }} info
  * @returns {Promise<'local' | 'tunnel'>}
  */
 export function chooseMode({ hasLan }) {
   const options = [
-    { value: 'local', name: 'rede local', hint: 'mesmo wi-fi · mais rápido · sem limite' },
-    { value: 'tunnel', name: 'túnel', hint: 'qualquer rede · via Cloudflare · até 100 MB por arquivo' },
+    { value: 'local', name: t('prompt.localName'), hint: t('prompt.localHint') },
+    { value: 'tunnel', name: t('prompt.tunnelName'), hint: t('prompt.tunnelHint') },
   ]
+  const nameWidth = Math.max(...options.map((option) => option.name.length)) + 1
 
   // sem wi-fi/cabo, o túnel é o único caminho que funciona: já começa nele
   let selected = hasLan ? 0 : 1
@@ -21,16 +24,16 @@ export function chooseMode({ hasLan }) {
     for (const [i, option] of options.entries()) {
       const active = i === selected
       const marker = active ? pc.green('›') : ' '
-      const name = active ? pc.bold(option.name.padEnd(11)) : pc.dim(option.name.padEnd(11))
-      const warn = option.value === 'local' && !hasLan ? pc.yellow(' sem rede local') : ''
+      const name = active ? pc.bold(option.name.padEnd(nameWidth)) : pc.dim(option.name.padEnd(nameWidth))
+      const warn = option.value === 'local' && !hasLan ? pc.yellow(t('prompt.noLan')) : ''
       stdout.write(`\x1b[2K  ${marker} ${pc.dim(`${i + 1}`)}  ${name} ${pc.dim(option.hint)}${warn}\n`)
     }
   }
 
   return new Promise((resolve) => {
-    stdout.write(`\n  ${pc.bold('como o celular vai se conectar?')}\n\n`)
+    stdout.write(`\n  ${pc.bold(t('prompt.question'))}\n\n`)
     render(true)
-    stdout.write(pc.dim('\n  ↑↓ escolher · enter confirmar\n'))
+    stdout.write(pc.dim(`\n  ${t('prompt.keys')}\n`))
     stdout.write('\x1b[2A')
 
     emitKeypressEvents(stdin)

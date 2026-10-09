@@ -1,5 +1,7 @@
 import { createServer } from 'node:net'
 import { networkInterfaces } from 'node:os'
+import { PORT_ATTEMPTS } from '../config.js'
+import { t } from '../i18n/index.js'
 
 // interfaces virtuais que o celular nunca vai conseguir alcançar
 const IGNORED = /vEthernet|WSL|docker|veth|br-|vmnet|VirtualBox|VMware|Hyper-V|tailscale|zerotier|utun|tun|tap|loopback/i
@@ -77,12 +79,12 @@ function isPortFree(port, host) {
  * @param {{ host?: string, attempts?: number }} options
  * @returns {Promise<number>}
  */
-export async function findFreePort(preferred = 8080, { host = '0.0.0.0', attempts = 20 } = {}) {
+export async function findFreePort(preferred, { host = '0.0.0.0', attempts = PORT_ATTEMPTS } = {}) {
   const last = Math.min(preferred + attempts - 1, 65535)
 
   for (let port = preferred; port <= last; port++) {
     if (await isPortFree(port, host)) return port
   }
 
-  throw new Error(`nenhuma porta livre entre ${preferred} e ${last}`)
+  throw new Error(t('errors.noFreePort', { from: preferred, to: last }))
 }

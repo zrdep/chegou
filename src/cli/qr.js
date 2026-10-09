@@ -1,3 +1,5 @@
+// desenha o QR code no terminal
+
 import qrcode from 'qrcode-terminal'
 
 /**

@@ -2,6 +2,7 @@ import { createWriteStream, existsSync } from 'node:fs'
 import { mkdir, rm, stat } from 'node:fs/promises'
 import { basename, extname, join } from 'node:path'
 import { pipeline } from 'node:stream/promises'
+import { t } from '../i18n/index.js'
 
 // caracteres proibidos no windows + caracteres de controle
 const FORBIDDEN = /[<>:"/\\|?*\u0000-\u001f\u007f]/g
@@ -10,7 +11,6 @@ const FORBIDDEN = /[<>:"/\\|?*\u0000-\u001f\u007f]/g
 const RESERVED = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i
 
 const MAX_LENGTH = 200
-const FALLBACK = 'arquivo'
 
 /**
  * transforma o nome enviado pelo celular num nome seguro pra salvar
@@ -31,7 +31,7 @@ export function sanitizeFilename(name) {
   const ext = extname(clean)
   let base = ext ? clean.slice(0, -ext.length) : clean
 
-  if (!base) base = FALLBACK
+  if (!base) base = t('upload.fallbackName')
   if (RESERVED.test(base)) base = `_${base}`
 
   const room = MAX_LENGTH - ext.length
@@ -84,7 +84,7 @@ async function openUnique(dir, filename) {
     }
   }
 
-  throw new Error(`não consegui um nome livre para ${filename}`)
+  throw new Error(t('upload.noFreeName', { name: filename }))
 }
 
 /**
@@ -114,7 +114,7 @@ export function createUploadHandler(destDir, { onFile } = {}) {
       // passou do limite de tamanho do multipart: arquivo veio cortado
       if (part.file.truncated) {
         await rm(path, { force: true })
-        return reply.code(413).send({ error: `${filename} é grande demais`, files: saved })
+        return reply.code(413).send({ error: 'too_large', file: filename, files: saved })
       }
 
       const { size } = await stat(path)

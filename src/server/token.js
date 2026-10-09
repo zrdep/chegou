@@ -25,7 +25,7 @@ export function createTokenGuard(token) {
       timingSafeEqual(received, expected)
 
     if (!valid) {
-      return reply.code(401).send({ error: 'não autorizado' })
+      return reply.code(401).send({ error: 'unauthorized' })
     }
   }
 }

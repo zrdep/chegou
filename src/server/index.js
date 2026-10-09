@@ -3,23 +3,26 @@ import { fileURLToPath } from 'node:url'
 import Fastify from 'fastify'
 import multipart from '@fastify/multipart'
 import fastifyStatic from '@fastify/static'
+import { MAX_FILE_SIZE, SSE_HEARTBEAT_MS } from '../config.js'
 import { createTokenGuard } from './token.js'
 import { createUploadHandler } from './upload.js'
 
 // caminho absoluto da pasta public/, funciona de qualquer lugar onde o chegou for rodado
-const PUBLIC_DIR = fileURLToPath(new URL('../public', import.meta.url))
-
-// 10 GB por arquivo: o padrão do multipart é 1 MB, o que barraria quase qualquer foto
-const MAX_FILE_SIZE = 10 * 1024 ** 3
+const PUBLIC_DIR = fileURLToPath(new URL('../../public', import.meta.url))
 
 /**
  * cria a instância do servidor com os plugins registrados
- * @param {{ port: number, dir: string, token: string, onFile?: function, shareManager?: import('./share.js').createShareManager, onDownload?: function }} options
+ * as respostas de erro levam um código ('unauthorized', 'too_large'...) e quem
+ * traduz é a página do celular, no idioma do próprio celular
+ * @param {{ dir: string, token: string, onFile?: function, shareManager?: ReturnType<import('./share.js').createShareManager>, onDownload?: function }} options
  * @returns {Promise<import('fastify').FastifyInstance>}
  */
-export async function createServer({ port, dir, token, onFile, shareManager, onDownload }) {
-  const app = Fastify({ logger: false })
+export async function createServer({ dir, token, onFile, shareManager, onDownload }) {
+  // forceCloseConnections: ao fechar, derruba também as conexões abertas
+  // (o /events fica aberto pra sempre e travaria o ctrl+c)
+  const app = Fastify({ logger: false, forceCloseConnections: true })
 
+  // o multipart limita a 1 MB por padrão, o que barraria quase qualquer foto
   await app.register(multipart, {
     limits: { fileSize: MAX_FILE_SIZE },
   })
@@ -79,7 +82,7 @@ export async function createServer({ port, dir, token, onFile, shareManager, onD
 
       // "batimento" a cada 15 s: impede que roteador, celular ou Cloudflare
       // derrubem a conexão parada (o Cloudflare corta em ~100 s sem tráfego)
-      const heartbeat = setInterval(() => reply.raw.write(': ping\n\n'), 15_000)
+      const heartbeat = setInterval(() => reply.raw.write(': ping\n\n'), SSE_HEARTBEAT_MS)
 
       request.raw.on('close', () => {
         clearInterval(heartbeat)
@@ -96,7 +99,7 @@ export async function createServer({ port, dir, token, onFile, shareManager, onD
       const item = shareManager?.getItem(id)
 
       if (!item || item.type !== 'file' || !existsSync(item.path)) {
-        return reply.code(404).send({ error: 'arquivo não encontrado' })
+        return reply.code(404).send({ error: 'not_found' })
       }
 
       onDownload?.({ name: item.name, size: item.size })
@@ -116,7 +119,7 @@ export async function createServer({ port, dir, token, onFile, shareManager, onD
     handler: async (request, reply) => {
       const body = request.body || {}
       const text = body.text
-      if (!text) return reply.code(400).send({ error: 'texto obrigatório' })
+      if (!text) return reply.code(400).send({ error: 'text_required' })
       const item = shareManager.addText(text)
       return { item: shareManager.toPublic(item, token) }
     },

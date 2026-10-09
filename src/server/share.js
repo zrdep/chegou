@@ -1,8 +1,7 @@
 import { existsSync, readdirSync, statSync } from 'node:fs'
 import { basename, join, resolve } from 'node:path'
-
-// limite de arquivos de uma pasta de uma vez, pra ninguém arrastar o C:\ sem querer
-const MAX_FOLDER_FILES = 200
+import { MAX_FOLDER_FILES } from '../config.js'
+import { t } from '../i18n/index.js'
 
 /**
  * @typedef {Object} SharedItem
@@ -77,12 +76,12 @@ export function createShareManager() {
   function addFile(filePath) {
     const fullPath = resolve(filePath)
     if (!existsSync(fullPath)) {
-      throw new Error(`arquivo não encontrado: ${filePath}`)
+      throw new Error(t('share.notFound', { path: filePath }))
     }
 
     const stat = statSync(fullPath)
     if (stat.isDirectory()) {
-      throw new Error(`caminho é uma pasta, selecione arquivos individuais: ${filePath}`)
+      throw new Error(t('share.isFolder', { path: filePath }))
     }
 
     const id = String(nextId++)
@@ -107,7 +106,7 @@ export function createShareManager() {
    */
   function addText(content) {
     const trimmed = String(content ?? '').trim()
-    if (!trimmed) throw new Error('texto vazio')
+    if (!trimmed) throw new Error(t('share.empty'))
 
     const isUrl = /^https?:\/\/\S+$/i.test(trimmed)
     const id = String(nextId++)
@@ -125,35 +124,6 @@ export function createShareManager() {
   }
 
   /**
-   * adiciona qualquer entrada (caminho de arquivo, link ou texto)
-   * detecta automaticamente se for arquivo existente no sistema
-   * @param {string} rawInput
-   * @returns {SharedItem}
-   */
-  function add(rawInput) {
-    let clean = String(rawInput ?? '').trim()
-    // remove aspas que o Windows terminal costuma colocar ao arrastar arquivos
-    if ((clean.startsWith('"') && clean.endsWith('"')) || (clean.startsWith("'") && clean.endsWith("'"))) {
-      clean = clean.slice(1, -1).trim()
-    }
-
-    if (!clean) throw new Error('entrada vazia')
-
-    try {
-      if (existsSync(resolve(clean))) {
-        const stat = statSync(resolve(clean))
-        if (!stat.isDirectory()) {
-          return addFile(clean)
-        }
-      }
-    } catch {
-      // not a valid path, treat as text
-    }
-
-    return addText(clean)
-  }
-
-  /**
    * compartilha os arquivos que estão direto dentro de uma pasta
    * (sem entrar em subpastas e ignorando arquivos ocultos)
    * @param {string} dirPath
@@ -165,11 +135,11 @@ export function createShareManager() {
       .filter((entry) => entry.isFile() && !entry.name.startsWith('.'))
       .map((entry) => join(full, entry.name))
 
-    if (!files.length) return { added: [], errors: [`a pasta ${basename(full)} não tem arquivos`] }
+    if (!files.length) return { added: [], errors: [t('share.emptyFolder', { name: basename(full) })] }
 
     const errors = []
     if (files.length > MAX_FOLDER_FILES) {
-      errors.push(`a pasta ${basename(full)} tem ${files.length} arquivos, mandei só os ${MAX_FOLDER_FILES} primeiros`)
+      errors.push(t('share.folderLimit', { name: basename(full), count: files.length, max: MAX_FOLDER_FILES }))
     }
 
     return { added: files.slice(0, MAX_FOLDER_FILES).map(addFile), errors }
@@ -247,7 +217,6 @@ export function createShareManager() {
   }
 
   return {
-    add,
     addInput,
     addArg,
     addFile,
