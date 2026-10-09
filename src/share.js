@@ -1,5 +1,8 @@
-import { existsSync, statSync } from 'node:fs'
-import { basename, resolve } from 'node:path'
+import { existsSync, readdirSync, statSync } from 'node:fs'
+import { basename, join, resolve } from 'node:path'
+
+// limite de arquivos de uma pasta de uma vez, pra ninguém arrastar o C:\ sem querer
+const MAX_FOLDER_FILES = 200
 
 /**
  * @typedef {Object} SharedItem
@@ -12,6 +15,40 @@ import { basename, resolve } from 'node:path'
  * @property {boolean} [isUrl]
  * @property {number} createdAt
  */
+
+/**
+ * separa o que o terminal cola quando você arrasta vários arquivos:
+ *   Windows:  "C:\pasta com espaço\a.jpg" C:\b.png   (aspas só em quem tem espaço)
+ *   Mac/Linux: '/tmp/a b.jpg' /tmp/c.png  ou  /tmp/a\ b.jpg
+ * @param {string} line
+ * @returns {string[]}
+ */
+export function splitDropped(line) {
+  const isWindows = process.platform === 'win32'
+  const pattern = isWindows ? /"([^"]+)"|'([^']+)'|(\S+)/g : /"([^"]+)"|'([^']+)'|((?:\\ |\S)+)/g
+  const tokens = []
+
+  for (const match of line.matchAll(pattern)) {
+    const token = match[1] ?? match[2] ?? (isWindows ? match[3] : match[3].replace(/\\ /g, ' '))
+    if (token) tokens.push(token)
+  }
+
+  return tokens
+}
+
+/**
+ * o caminho existe e é um arquivo (ou pasta)?
+ * @param {string} path
+ * @returns {'file' | 'dir' | null}
+ */
+function kindOf(path) {
+  try {
+    const stat = statSync(resolve(path))
+    return stat.isDirectory() ? 'dir' : 'file'
+  } catch {
+    return null
+  }
+}
 
 /**
  * gerencia itens compartilhados do PC para o celular
@@ -117,6 +154,80 @@ export function createShareManager() {
   }
 
   /**
+   * compartilha os arquivos que estão direto dentro de uma pasta
+   * (sem entrar em subpastas e ignorando arquivos ocultos)
+   * @param {string} dirPath
+   * @returns {{ added: SharedItem[], errors: string[] }}
+   */
+  function addFolder(dirPath) {
+    const full = resolve(dirPath)
+    const files = readdirSync(full, { withFileTypes: true })
+      .filter((entry) => entry.isFile() && !entry.name.startsWith('.'))
+      .map((entry) => join(full, entry.name))
+
+    if (!files.length) return { added: [], errors: [`a pasta ${basename(full)} não tem arquivos`] }
+
+    const errors = []
+    if (files.length > MAX_FOLDER_FILES) {
+      errors.push(`a pasta ${basename(full)} tem ${files.length} arquivos, mandei só os ${MAX_FOLDER_FILES} primeiros`)
+    }
+
+    return { added: files.slice(0, MAX_FOLDER_FILES).map(addFile), errors }
+  }
+
+  /**
+   * um argumento da linha de comando (já separado pelo terminal):
+   * arquivo, pasta ou texto/link
+   * @param {string} arg
+   * @returns {{ added: SharedItem[], errors: string[] }}
+   */
+  function addArg(arg) {
+    const kind = kindOf(arg)
+    if (kind === 'file') return { added: [addFile(arg)], errors: [] }
+    if (kind === 'dir') return addFolder(arg)
+    return { added: [addText(arg)], errors: [] }
+  }
+
+  /**
+   * entende o que foi digitado/arrastado no terminal: um ou vários arquivos,
+   * ou um texto/link. devolve o que foi adicionado e os erros (ex: pastas)
+   * @param {string} rawInput
+   * @returns {{ added: SharedItem[], errors: string[] }}
+   */
+  function addInput(rawInput) {
+    // o PowerShell às vezes cola "& " antes do caminho arrastado
+    const line = String(rawInput ?? '').trim().replace(/^&\s+/, '')
+    if (!line) return { added: [], errors: [] }
+
+    // um arquivo só (mesmo com espaço no nome, sem aspas)
+    const unquoted = line.replace(/^(["'])(.*)\1$/, '$2')
+    if (kindOf(unquoted) === 'file') return { added: [addFile(unquoted)], errors: [] }
+
+    // vários caminhos: só vale se TODOS existirem, senão é um texto comum
+    const tokens = splitDropped(line)
+    const kinds = tokens.map(kindOf)
+    if (tokens.length > 1 && kinds.every(Boolean)) {
+      const added = []
+      const errors = []
+      tokens.forEach((token, i) => {
+        if (kinds[i] === 'dir') {
+          const folder = addFolder(token)
+          added.push(...folder.added)
+          errors.push(...folder.errors)
+        } else {
+          added.push(addFile(token))
+        }
+      })
+      return { added, errors }
+    }
+
+    // uma pasta: manda todos os arquivos de dentro
+    if (kindOf(unquoted) === 'dir') return addFolder(unquoted)
+
+    return { added: [addText(line)], errors: [] }
+  }
+
+  /**
    * converte item interno para formato público seguro
    * @param {SharedItem} item
    * @param {string} [token]
@@ -137,6 +248,8 @@ export function createShareManager() {
 
   return {
     add,
+    addInput,
+    addArg,
     addFile,
     addText,
     getItem: (id) => items.get(String(id)),

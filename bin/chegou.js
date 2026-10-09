@@ -169,7 +169,9 @@ try {
 const shareManager = createShareManager()
 for (const rawItem of options.items) {
   try {
-    shareManager.add(rawItem)
+    // cada argumento já vem separado pelo terminal: pode ser arquivo, pasta ou link
+    const { errors } = shareManager.addArg(rawItem)
+    for (const message of errors) console.error(`  ${pc.yellow('!')} ${message}`)
   } catch (err) {
     console.error(`  ${pc.yellow('!')} ${err.message}`)
   }
@@ -296,8 +298,9 @@ if (process.stdin.isTTY || !process.env.CI) {
     // "q" + Enter fecha, igual ao ctrl+c
     if (trimmed.toLowerCase() === 'q') return shutdown('ctrl+c')
     try {
-      const added = shareManager.add(trimmed)
-      printShared(added)
+      const { added, errors } = shareManager.addInput(trimmed)
+      for (const item of added) printShared(item)
+      for (const message of errors) console.log(`  ${pc.yellow('!')} ${message}`)
       resetIdle()
     } catch (err) {
       console.log(`  ${pc.red('!')} ${err.message}`)
