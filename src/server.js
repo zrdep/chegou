@@ -9,8 +9,9 @@ import { createUploadHandler } from './upload.js'
 // caminho absoluto da pasta public/, funciona de qualquer lugar onde o chegou for rodado
 const PUBLIC_DIR = fileURLToPath(new URL('../public', import.meta.url))
 
-// 10 GB por arquivo: o padrão do multipart é 1 MB, o que barraria quase qualquer foto
-const MAX_FILE_SIZE = 10 * 1024 ** 3
+// 2 GB por arquivo: o padrão do multipart é 1 MB, o que barraria quase qualquer foto,
+// mas 10 GB permitia esgotar o disco rapidamente sem limite de taxa
+const MAX_FILE_SIZE = 2 * 1024 ** 3
 
 /**
  * cria a instância do servidor com os plugins registrados
@@ -21,7 +22,12 @@ export async function createServer({ port, dir, token, onFile, shareManager, onD
   const app = Fastify({ logger: false })
 
   await app.register(multipart, {
-    limits: { fileSize: MAX_FILE_SIZE },
+    limits: {
+      fileSize: MAX_FILE_SIZE,
+      files: 1,
+      fields: 10,
+      fieldSize: 1 * 1024 ** 2,
+    },
   })
 
   await app.register(fastifyStatic, {
