@@ -272,6 +272,25 @@ async function uploadSmart(files, onProgress) {
   return { files: saved }
 }
 
+/**
+ * depois do primeiro envio que deu certo, uma linha discreta pedindo estrela
+ * (só uma vez por visita, pra não encher o saco)
+ */
+let starShown = false
+function showStar() {
+  if (starShown) return
+  starShown = true
+
+  const line = el('p', 'line dim star', 'curtiu? deixa uma ')
+  const link = el('a', '', '★ no github')
+  link.href = 'https://github.com/zrdep/chegou'
+  link.target = '_blank'
+  link.rel = 'noopener'
+  line.append(link)
+  els.log.append(line)
+  line.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+}
+
 // avisa antes de fechar a página no meio do envio
 window.addEventListener('beforeunload', (event) => {
   if (state === 'sending' || mediaBusy) event.preventDefault()
@@ -309,6 +328,7 @@ els.send.addEventListener('click', async () => {
 
     const count = result.files?.length ?? selected.length
     log(`✓ ${plural(count)} ${count === 1 ? 'chegou' : 'chegaram'} no PC`, 'ok success')
+    showStar()
     setState('done')
   } catch (err) {
     if (err.beforeUpload) els.progressArea.hidden = true
@@ -417,6 +437,7 @@ async function handleDirectMedia(file, kind) {
     media.detail.className = 'line camera-detail ok'
     media.detail.textContent = `✓ ${label} chegou no PC`
     log(`✓ ${label} chegou no PC`, 'ok success')
+    showStar()
 
   } catch (err) {
     media.card.className = 'camera-card is-error'
