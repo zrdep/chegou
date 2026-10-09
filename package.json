@@ -1,7 +1,7 @@
 {
   "name": "chegou",
   "version": "1.5.3",
-  "description": "Arquivos entre o celular e o PC pela rede local. Um comando, um QR code, pronto.",
+  "description": "Move files between your phone and your PC over the local network. One command, one QR code, done.",
   "type": "module",
   "bin": {
     "chegou": "bin/chegou.js"
@@ -26,7 +26,11 @@
     "share",
     "qr",
     "transfer",
-    "wifi"
+    "wifi",
+    "phone",
+    "android",
+    "iphone",
+    "airdrop"
   ],
   "author": "Pedro Randolfo",
   "repository": {
