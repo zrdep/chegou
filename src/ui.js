@@ -148,7 +148,7 @@ export function printBanner({ ip, port, preferredPort, dir, token, version, time
           : 'conecte o PC na rede pra usar no celular'
     ),
     pc.dim('arraste arquivos aqui ou digite link + Enter'),
-    pc.dim('ctrl+c para sair'),
+    pc.dim('q + enter ou ctrl+c para sair'),
   )
 
   let lines = info
@@ -245,5 +245,12 @@ export function printGoodbye({ reason = 'ctrl+c', minutes = 0 } = {}) {
     console.log(`\n  ${pc.yellow(sym.warn)} ${pc.dim(`desligado por inatividade (${formatMinutes(minutes)} sem uso)`)}`)
   }
 
-  console.log(`\n  ${pc.dim('até mais ·')} ${summary}\n`)
+  console.log(`\n  ${pc.dim('até mais ·')} ${summary}`)
+
+  // pedido de estrela: só quando a pessoa fechou (não no desligamento automático)
+  if (reason !== 'timeout') {
+    console.log(`\n  ${pc.dim('curtiu? deixa uma')} ${pc.yellow('★')} ${pc.dim('→')} ${pc.cyan('github.com/zrdep/chegou')}`)
+  }
+
+  console.log()
 }

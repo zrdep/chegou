@@ -292,6 +292,9 @@ if (process.stdin.isTTY || !process.env.CI) {
   rl.on('line', (line) => {
     const trimmed = line.trim()
     if (!trimmed) return
+
+    // "q" + Enter fecha, igual ao ctrl+c
+    if (trimmed.toLowerCase() === 'q') return shutdown('ctrl+c')
     try {
       const added = shareManager.add(trimmed)
       printShared(added)
