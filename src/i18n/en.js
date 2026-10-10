@@ -99,6 +99,10 @@ export default {
     noFreeName: "couldn't find a free name for {name}",
   },
 
+  update: {
+    available: 'new version available',
+    run: 'to update:',
+  },
   goodbye: {
     idle: 'stopped after being idle ({time})',
     bye: 'see you ·',

@@ -7,7 +7,8 @@ import pc from 'picocolors'
 import { fail, parseArgs } from './cli/args.js'
 import { watchIdle } from './cli/idle.js'
 import { chooseMode } from './cli/prompt.js'
-import { printBanner, printDownloaded, printError, printFile, printGoodbye, printShared, printWarning } from './cli/ui.js'
+import { checkForUpdate } from './cli/update.js'
+import { printBanner, printDownloaded, printError, printFile, printGoodbye, printShared, printUpdate, printWarning } from './cli/ui.js'
 import { TOKEN_BYTES } from './config.js'
 import { t } from './i18n/index.js'
 import { findFreePort, getLocalIP } from './net/network.js'
@@ -21,6 +22,9 @@ const { version } = JSON.parse(readFileSync(new URL('../package.json', import.me
 export async function run(argv = process.argv.slice(2)) {
   // 1. opções e pasta de destino
   const options = parseArgs(argv)
+
+  // já começa a perguntar pro npm se tem versão nova (em paralelo, sem esperar)
+  const update = checkForUpdate(version)
 
   try {
     mkdirSync(options.dir, { recursive: true })
@@ -105,6 +109,7 @@ export async function run(argv = process.argv.slice(2)) {
   printBanner({ ip, port, preferredPort: options.port, dir: options.dir, token, version, timeout: options.timeout, relayUrl })
   idle.reset()
   shareManager.getAll().forEach(printShared)
+  update.then((info) => info && !closing && printUpdate(info))
 
   // 7. terminal interativo: arrastar arquivos/pastas, colar link ou "q" pra sair
   if (process.stdin.isTTY || !process.env.CI) {

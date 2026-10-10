@@ -193,6 +193,12 @@ export function printWarning(message) {
   console.log(`  ${pc.yellow('!')} ${message}`)
 }
 
+/** aviso de versão nova no npm */
+export function printUpdate({ current, latest, command }) {
+  console.log(`  ${pc.yellow('↑')} ${t('update.available')} ${pc.dim(current)} ${pc.dim('→')} ${pc.green(latest)}`)
+  console.log(`    ${pc.dim(t('update.run'))} ${pc.cyan(command)}\n`)
+}
+
 /** erro vermelho no meio do uso */
 export function printError(message) {
   console.log(`  ${pc.red('!')} ${message}`)
