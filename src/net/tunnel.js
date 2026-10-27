@@ -1,22 +1,64 @@
-import { existsSync, readdirSync } from 'node:fs'
+import { readFileSync, rmSync, statSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
+import pc from 'picocolors'
 import { startTunnel } from 'untun'
 import { t } from '../i18n/index.js'
 
-// o untun guarda o cloudflared aqui depois de baixar
-const CLOUDFLARED_DIR = join(tmpdir(), 'node-untun')
+// o cloudflared de verdade tem dezenas de MB; menos que isso é download pela metade
+const MIN_BINARY_BYTES = 5 * 1024 * 1024
 
 /**
- * o binário do cloudflared já foi baixado alguma vez?
+ * versão do cloudflared que o untun usa (ele procura exatamente esse arquivo).
+ * ela fica escrita dentro do untun; se mudar de lugar numa versão nova, devolve null
+ * @returns {string | null}
+ */
+function cloudflaredVersion() {
+  if (process.env.CLOUDFLARED_VERSION) return process.env.CLOUDFLARED_VERSION
+  try {
+    const require = createRequire(import.meta.url)
+    const dist = dirname(require.resolve('untun'))
+    const source = readFileSync(join(dist, '_chunks', 'cloudflared.mjs'), 'utf8')
+    return source.match(/CLOUDFLARED_VERSION\s*\|\|\s*"([^"]+)"/)?.[1] ?? null
+  } catch {
+    return null
+  }
+}
+
+/** o mesmo caminho que o untun usa pro binário (sem versão conhecida: null) */
+function cloudflaredPath() {
+  const version = cloudflaredVersion()
+  if (!version) return null
+  const name = process.platform === 'win32' ? `cloudflared.${version}.exe` : `cloudflared.${version}`
+  return join(tmpdir(), 'node-untun', name)
+}
+
+/**
+ * o cloudflared desta versão já está baixado e inteiro?
+ * um arquivo pequeno demais é download interrompido: apaga, senão o untun
+ * acharia que está instalado e o túnel falharia pra sempre
  * @returns {boolean}
  */
 function hasCloudflared() {
+  const path = cloudflaredPath()
+  if (!path) return false
   try {
-    return existsSync(CLOUDFLARED_DIR) && readdirSync(CLOUDFLARED_DIR).some((f) => f.startsWith('cloudflared'))
+    if (statSync(path).size >= MIN_BINARY_BYTES) return true
+    rmSync(path, { force: true })
   } catch {
-    return false
+    // não existe ainda
   }
+  return false
+}
+
+/** apaga um download que começou nesta execução e não terminou */
+function removePartialDownload() {
+  const path = cloudflaredPath()
+  if (!path) return
+  try {
+    if (statSync(path).size < MIN_BINARY_BYTES) rmSync(path, { force: true })
+  } catch {}
 }
 
 /**
@@ -63,6 +105,9 @@ async function waitUntilReachable(url, ms) {
  */
 export async function openTunnel(port, { onStatus = () => {} } = {}) {
   const firstRun = !hasCloudflared()
+
+  // na primeira vez o cloudflared é baixado do GitHub da Cloudflare: avisa dos termos
+  if (firstRun) process.stdout.write(`\r\x1b[2K  ${pc.dim(t('tunnel.notice'))}\n`)
   onStatus(firstRun ? t('tunnel.downloading') : t('tunnel.opening'))
 
   // o untun escreve logs em inglês no console; silencia pra manter o terminal limpo
@@ -70,12 +115,9 @@ export async function openTunnel(port, { onStatus = () => {} } = {}) {
   console.log = () => {}
 
   let tunnel
+  const starting = startTunnel({ port, hostname: '127.0.0.1', acceptCloudflareNotice: true })
   try {
-    tunnel = await withTimeout(
-      startTunnel({ port, hostname: '127.0.0.1', acceptCloudflareNotice: true }),
-      firstRun ? 180_000 : 30_000,
-      t('tunnel.slow'),
-    )
+    tunnel = await withTimeout(starting, firstRun ? 180_000 : 30_000, t('tunnel.slow'))
     if (!tunnel) throw new Error(t('tunnel.failed'))
 
     const url = await withTimeout(Promise.resolve(tunnel.getURL()), 30_000, t('tunnel.noUrl'))
@@ -97,6 +139,9 @@ export async function openTunnel(port, { onStatus = () => {} } = {}) {
     }
   } catch (err) {
     await tunnel?.close().catch(() => {})
+    // se o tempo estourou, o túnel ainda pode abrir depois: fecha quando abrir
+    starting.then((late) => late?.close()).catch(() => {})
+    if (firstRun) removePartialDownload()
     throw err
   } finally {
     console.log = originalLog
