@@ -51,6 +51,7 @@ window.CHEGOU_LOCALES.pt = {
     arrived: { one: '✓ {n} arquivo chegou no PC', other: '✓ {n} arquivos chegaram no PC' },
     photo: '✓ foto chegou no PC',
     video: '✓ vídeo chegou no PC',
+    partial: '✓ {sent} de {total} arquivos chegaram no PC',
   },
 
   errors: {
@@ -62,6 +63,7 @@ window.CHEGOU_LOCALES.pt = {
     network: 'conexão perdida · o PC ainda está rodando o chegou?',
     aborted: 'envio cancelado',
     noToken: '! sem token na url · escaneie o QR code do terminal',
+    more: '✗ e mais {n} com erro',
   },
 
   pc: {

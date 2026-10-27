@@ -51,6 +51,7 @@ window.CHEGOU_LOCALES.en = {
     arrived: { one: '✓ {n} file arrived on your PC', other: '✓ {n} files arrived on your PC' },
     photo: '✓ photo arrived on your PC',
     video: '✓ video arrived on your PC',
+    partial: '✓ {sent} of {total} files arrived on your PC',
   },
 
   errors: {
@@ -62,6 +63,7 @@ window.CHEGOU_LOCALES.en = {
     network: 'connection lost · is chegou still running on the PC?',
     aborted: 'upload cancelled',
     noToken: '! no token in the url · scan the QR code in the terminal',
+    more: '✗ and {n} more failed',
   },
 
   pc: {

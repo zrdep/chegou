@@ -235,10 +235,18 @@ function upload(files, onProgress) {
         401: t('errors.unauthorized'),
         413: isRelay ? t('errors.tooLargeTunnel') : t('errors.tooLarge'),
       }
-      reject(new Error(messages[xhr.status] ?? t('errors.http', { status: xhr.status })))
+      const err = new Error(messages[xhr.status] ?? t('errors.http', { status: xhr.status }))
+      // token errado: não adianta tentar os próximos arquivos
+      err.fatal = xhr.status === 401
+      reject(err)
     })
 
-    xhr.addEventListener('error', () => reject(new Error(t('errors.network'))))
+    xhr.addEventListener('error', () => {
+      // o PC saiu do ar ou a rede caiu: os próximos também falhariam
+      const err = new Error(t('errors.network'))
+      err.fatal = true
+      reject(err)
+    })
     xhr.addEventListener('abort', () => reject(new Error(t('errors.aborted'))))
 
     xhr.send(form)
@@ -246,34 +254,53 @@ function upload(files, onProgress) {
 }
 
 /**
- * na rede local manda tudo de uma vez; no túnel, um arquivo por requisição
- * (o limite de 100 MB é por requisição) e recusa antes quem passar do limite
+ * manda um arquivo por requisição: um erro no meio não estraga os outros, cada
+ * arquivo é marcado como enviado ou com erro, e não há limite de quantidade.
+ * no túnel (100 MB por requisição) recusa antes quem passar do limite
  * @param {File[]} files
  * @param {(loaded: number, total: number) => void} onProgress
- * @returns {Promise<{ files: { name: string, size: number }[] }>}
+ * @param {(index: number, ok: boolean) => void} [onFileDone]
+ * @returns {Promise<{ sent: number, failed: { file: File, message: string }[] }>}
  */
-async function uploadSmart(files, onProgress) {
-  if (!isRelay) return upload(files, onProgress)
-
-  const tooBig = files.filter((file) => file.size > RELAY_MAX_BYTES)
-  if (tooBig.length) {
-    const names = tooBig.map((file) => `${file.name} (${formatSize(file.size)})`).join(', ')
-    const err = new Error(t('errors.tunnelLimit', { names }))
-    err.beforeUpload = true
-    throw err
+async function uploadEach(files, onProgress, onFileDone = () => {}) {
+  if (isRelay) {
+    const tooBig = files.filter((file) => file.size > RELAY_MAX_BYTES)
+    if (tooBig.length) {
+      const names = tooBig.map((file) => `${file.name} (${formatSize(file.size)})`).join(', ')
+      const err = new Error(t('errors.tunnelLimit', { names }))
+      err.beforeUpload = true
+      throw err
+    }
   }
 
-  const total = files.reduce((sum, file) => sum + file.size, 0)
-  const saved = []
+  const total = files.reduce((sum, file) => sum + file.size, 0) || 1
+  const failed = []
+  let sent = 0
   let done = 0
 
-  for (const file of files) {
-    const result = await upload([file], (loaded) => onProgress(done + Math.min(loaded, file.size), total))
-    saved.push(...(result.files ?? []))
+  for (const [index, file] of files.entries()) {
+    try {
+      await upload([file], (loaded) => onProgress(done + Math.min(loaded, file.size), total))
+      sent++
+      onFileDone(index, true)
+    } catch (err) {
+      onFileDone(index, false)
+      failed.push({ file, message: err.message })
+
+      // token errado ou PC fora do ar: marca o resto como não enviado e para
+      if (err.fatal) {
+        for (let rest = index + 1; rest < files.length; rest++) {
+          onFileDone(rest, false)
+          failed.push({ file: files[rest], message: err.message })
+        }
+        break
+      }
+    }
     done += file.size
+    onProgress(done, total)
   }
 
-  return { files: saved }
+  return { sent, failed }
 }
 
 /**
@@ -313,27 +340,46 @@ els.send.addEventListener('click', async () => {
   // tenta manter a tela acesa (só funciona em https, então é um bônus)
   const wakeLock = await navigator.wakeLock?.request('screen').catch(() => null)
 
-  try {
-    const result = await uploadSmart(selected, (loaded, total) => {
-      const seconds = (performance.now() - started) / 1000
-      const speed = seconds > 0.3 ? ` · ${formatSize(loaded / seconds)}/s` : ''
+  const items = [...els.list.querySelectorAll('li')]
 
-      setProgress(loaded / total)
-      els.detail.textContent = t('progress', { done: formatSize(loaded), total: formatSize(total), speed })
-    })
+  try {
+    const result = await uploadEach(
+      selected,
+      (loaded, total) => {
+        const seconds = (performance.now() - started) / 1000
+        const speed = seconds > 0.3 ? ` · ${formatSize(loaded / seconds)}/s` : ''
+
+        setProgress(loaded / total)
+        els.detail.textContent = t('progress', { done: formatSize(loaded), total: formatSize(total), speed })
+      },
+      // marca cada arquivo com ✓ ou ✗ assim que ele termina
+      (index, ok) => items[index]?.classList.add(ok ? 'sent' : 'failed'),
+    )
 
     setProgress(1)
 
-    // marca cada arquivo com ✓, um depois do outro
-    els.list.querySelectorAll('li').forEach((item, i) => {
-      item.style.setProperty('--n', String(i))
-      item.classList.add('sent')
-    })
+    if (!result.failed.length) {
+      log(t('done.arrived', { n: result.sent }), 'ok success')
+      showStar()
+      setState('done')
+    } else {
+      if (result.sent) log(t('done.partial', { sent: result.sent, total: selected.length }), 'ok')
 
-    const count = result.files?.length ?? selected.length
-    log(t('done.arrived', { n: count }), 'ok success')
-    showStar()
-    setState('done')
+      // mesma mensagem pra todos (token errado, PC fora do ar): uma linha só
+      const messages = new Set(result.failed.map((f) => f.message))
+      if (messages.size === 1 && result.failed.length > 1) {
+        log(`✗ ${[...messages][0]}`, 'err')
+      } else {
+        for (const f of result.failed.slice(0, 5)) log(`✗ ${f.file.name}: ${f.message}`, 'err')
+        if (result.failed.length > 5) log(t('errors.more', { n: result.failed.length - 5 }), 'err')
+      }
+
+      // "tentar de novo" reenvia só os que falharam (sem duplicar os que já chegaram)
+      selected = result.failed.map((f) => f.file)
+      renderList()
+      els.list.querySelectorAll('li').forEach((item) => item.classList.add('failed'))
+      setState('error')
+    }
   } catch (err) {
     if (err.beforeUpload) els.progressArea.hidden = true
     els.list.querySelectorAll('li').forEach((item) => item.classList.add('failed'))
@@ -428,12 +474,13 @@ async function handleDirectMedia(file, kind) {
   const doneText = isVideo ? t('done.video') : t('done.photo')
 
   try {
-    await uploadSmart([uploadFile], (loaded, total) => {
+    const { failed } = await uploadEach([uploadFile], (loaded, total) => {
       const seconds = (performance.now() - started) / 1000
       const speed = seconds > 0.3 ? ` · ${formatSize(loaded / seconds)}/s` : ''
       setMediaProgress(loaded / total)
       media.detail.textContent = t('progress', { done: formatSize(loaded), total: formatSize(total), speed })
     })
+    if (failed.length) throw new Error(failed[0].message)
 
     setMediaProgress(1)
     media.card.className = 'camera-card is-done'
