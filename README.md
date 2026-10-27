@@ -62,7 +62,7 @@ or for good:
 npm install -g chegou
 ```
 
-requires **Node.js 20** or newer.
+requires **Node.js 20.19+** or **22.12+** (older versions show a warning and exit).
 
 ---
 
@@ -104,6 +104,14 @@ while chegou is running, **drop files or folders on the terminal window** or typ
 | `--open [on\|off]` | | open the folder (with the file selected) when the 1st file arrives. alone it flips on/off, and the choice is saved | on |
 | `--lang <language>` | | terminal language (`en`, `pt`) | system's |
 | `--help` | `-h` | show the help | |
+
+### environment variables
+
+| variable | what it does |
+|---|---|
+| `CHEGOU_LANG` | terminal language, same as `--lang` |
+| `CHEGOU_NO_UPDATE_CHECK=1` | don't check npm for a new version (`NO_UPDATE_NOTIFIER` works too) |
+| `CHEGOU_CONFIG_DIR` | where `settings.json` is saved. default: `%APPDATA%\chegou` on Windows, `~/.config/chegou` elsewhere |
 
 ---
 
@@ -165,7 +173,7 @@ if you move files between your own devices every day, LocalSend is probably the 
 
 being careful is healthy: running random npm packages is a real risk. that's why chegou is small and open: a handful of files in `bin/`, `src/` and `public/`, readable in a few minutes. the only dependencies are `fastify` (and official plugins), `picocolors`, `qrcode-terminal` and `untun` (for the tunnel).
 
-what it does on your PC: opens a port on the local network while it runs and writes files only to the folder you choose. it installs nothing and doesn't run in the background. it only reaches the internet if you pick the tunnel.
+what it does on your PC: opens a port on the local network while it runs and writes files only to the folder you choose. it installs nothing and doesn't run in the background. files never leave your network on the local mode. it reaches the internet in two cases: to check npm for a new version (turn off with `CHEGOU_NO_UPDATE_CHECK=1`) and when you pick the tunnel.
 
 prefer running it from source:
 

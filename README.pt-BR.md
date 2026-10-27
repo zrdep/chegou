@@ -60,7 +60,7 @@ ou de vez:
 npm install -g chegou
 ```
 
-precisa de **Node.js 20** ou mais novo.
+precisa de **Node.js 20.19+** ou **22.12+** (em versões antigas ele avisa e fecha).
 
 ---
 
@@ -102,6 +102,14 @@ com o chegou aberto, **arraste arquivos ou pastas pra janela do terminal** ou di
 | `--open [on\|off]` | | abre a pasta (com o arquivo selecionado) quando o 1º arquivo chega. sozinho, liga/desliga, e a escolha fica salva | ligado |
 | `--lang <idioma>` | | idioma do terminal (`pt`, `en`) | o do sistema |
 | `--help` | `-h` | mostra a ajuda | |
+
+### variáveis de ambiente
+
+| variável | o que faz |
+|---|---|
+| `CHEGOU_LANG` | idioma do terminal, igual ao `--lang` |
+| `CHEGOU_NO_UPDATE_CHECK=1` | não consulta o npm atrás de versão nova (`NO_UPDATE_NOTIFIER` também vale) |
+| `CHEGOU_CONFIG_DIR` | onde fica o `settings.json`. padrão: `%APPDATA%\chegou` no Windows, `~/.config/chegou` nos outros |
 
 ---
 
@@ -163,7 +171,7 @@ se você transfere arquivo todo dia entre os seus aparelhos, o LocalSend provave
 
 desconfiar é saudável: rodar pacote aleatório do npm é um risco real. por isso o chegou é pequeno e aberto: poucos arquivos em `bin/`, `src/` e `public/`, dá pra ler tudo em minutos. as dependências são só `fastify` (e plugins oficiais), `picocolors`, `qrcode-terminal` e `untun` (pro túnel).
 
-o que ele faz no seu PC: abre uma porta na rede local enquanto está rodando e grava arquivos só na pasta que você escolher. não instala nada e não roda em segundo plano. só acessa a internet se você escolher o modo túnel.
+o que ele faz no seu PC: abre uma porta na rede local enquanto está rodando e grava arquivos só na pasta que você escolher. não instala nada e não roda em segundo plano. no modo rede local os arquivos nunca saem da sua rede. ele só acessa a internet em dois casos: pra ver se tem versão nova no npm (desliga com `CHEGOU_NO_UPDATE_CHECK=1`) e quando você escolhe o túnel.
 
 se preferir rodar direto do código:
 
