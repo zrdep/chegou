@@ -7,8 +7,9 @@
 
 import en from './en.js'
 import pt from './pt.js'
+import es from './es.js'
 
-const LOCALES = { pt, en }
+const LOCALES = { pt, en, es }
 const FALLBACK = 'en'
 
 let current = FALLBACK
