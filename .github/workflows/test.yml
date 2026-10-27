@@ -4,13 +4,16 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   test:
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        node: [20, 22]
+        node: [20, 22, 24]
 
     runs-on: ${{ matrix.os }}
     name: ${{ matrix.os }} · node ${{ matrix.node }}
@@ -22,6 +25,6 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
 
-      - run: npm install
+      - run: npm ci
 
       - run: npm test
