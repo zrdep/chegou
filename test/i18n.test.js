@@ -3,8 +3,6 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { runInNewContext } from 'node:vm'
 import { availableLangs, detectLang, setLang, t } from '../src/i18n/index.js'
-import en from '../src/i18n/en.js'
-import pt from '../src/i18n/pt.js'
 
 /** todas as chaves "a.b.c" e as {variáveis} de cada texto */
 function flatten(dict, prefix = '', out = {}) {
@@ -29,12 +27,24 @@ function loadPublic(lang) {
   return window.CHEGOU_LOCALES[lang]
 }
 
-test('terminal: pt e en têm as mesmas chaves e variáveis', () => {
-  samePlaces(pt, en, 'src/i18n')
-})
+const loadTerminal = async (lang) => (await import(`../src/i18n/${lang}.js`)).default
 
-test('celular: pt e en têm as mesmas chaves e variáveis', () => {
-  samePlaces(loadPublic('pt'), loadPublic('en'), 'public/i18n')
+for (const lang of availableLangs.filter((l) => l !== 'en')) {
+  test(`terminal: ${lang} tem as mesmas chaves e variáveis do en`, async () => {
+    samePlaces(await loadTerminal('en'), await loadTerminal(lang), `src/i18n/${lang}`)
+  })
+
+  test(`celular: ${lang} tem as mesmas chaves e variáveis do en`, () => {
+    samePlaces(loadPublic('en'), loadPublic(lang), `public/i18n/${lang}`)
+  })
+}
+
+test('celular: todo idioma do terminal tem página e está no index.html', () => {
+  const html = readFileSync(new URL('../public/index.html', import.meta.url), 'utf8')
+  for (const lang of availableLangs) {
+    assert.ok(html.includes(`<script src="i18n/${lang}.js"></script>`), `${lang} fora do index.html`)
+    assert.ok(loadPublic(lang)?.meta?.htmlLang, `public/i18n/${lang}.js sem meta.htmlLang`)
+  }
 })
 
 test('t: troca variáveis, plural e fallback', () => {
