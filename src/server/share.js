@@ -49,6 +49,22 @@ function kindOf(path) {
   }
 }
 
+// extensões comuns: "fto.jpg" é quase certamente um arquivo digitado errado,
+// mas "google.com" é um site (por isso .com, .br etc. não entram aqui)
+const FILE_EXTENSIONS = /\.(jpe?g|png|gif|webp|heic|heif|bmp|svg|mp4|mov|mkv|avi|webm|mp3|m4a|wav|ogg|flac|pdf|docx?|xlsx?|pptx?|odt|txt|csv|json|md|zip|rar|7z|tar|gz|apk|exe|msi|dmg|iso)$/i
+
+/**
+ * parece um caminho de arquivo? (mesmo que não exista)
+ *   ./foto.jpg, ~/fotos, C:\pasta, /tmp/x, fto.jpg  -> sim
+ *   https://site.com, google.com, "olá tudo bem"     -> não
+ * @param {string} text
+ */
+export function looksLikePath(text) {
+  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(text)) return false // url
+  if (/^(\.{1,2}[\\/]|~[\\/]|\/|[a-z]:[\\/])/i.test(text) || text.includes('\\')) return true
+  return !/\s/.test(text) && FILE_EXTENSIONS.test(text)
+}
+
 /**
  * gerencia itens compartilhados do PC para o celular
  */
@@ -155,6 +171,8 @@ export function createShareManager() {
     const kind = kindOf(arg)
     if (kind === 'file') return { added: [addFile(arg)], errors: [] }
     if (kind === 'dir') return addFolder(arg)
+    // caminho que não existe: avisa em vez de mandar o caminho como texto
+    if (looksLikePath(arg)) return { added: [], errors: [t('share.notFound', { path: arg })] }
     return { added: [addText(arg)], errors: [] }
   }
 
@@ -173,14 +191,18 @@ export function createShareManager() {
     const unquoted = line.replace(/^(["'])(.*)\1$/, '$2')
     if (kindOf(unquoted) === 'file') return { added: [addFile(unquoted)], errors: [] }
 
-    // vários caminhos: só vale se TODOS existirem, senão é um texto comum
+    // vários caminhos arrastados: compartilha os que existem e avisa dos que sumiram.
+    // se algum pedaço não parece caminho, a linha inteira é um texto comum
     const tokens = splitDropped(line)
     const kinds = tokens.map(kindOf)
-    if (tokens.length > 1 && kinds.every(Boolean)) {
+    const allPaths = tokens.every((token, i) => kinds[i] || looksLikePath(token))
+    if (tokens.length > 1 && allPaths && kinds.some(Boolean)) {
       const added = []
       const errors = []
       tokens.forEach((token, i) => {
-        if (kinds[i] === 'dir') {
+        if (!kinds[i]) {
+          errors.push(t('share.notFound', { path: token }))
+        } else if (kinds[i] === 'dir') {
           const folder = addFolder(token)
           added.push(...folder.added)
           errors.push(...folder.errors)
@@ -193,6 +215,12 @@ export function createShareManager() {
 
     // uma pasta: manda todos os arquivos de dentro
     if (kindOf(unquoted) === 'dir') return addFolder(unquoted)
+
+    // caminhos que não existem (digitados errado ou arquivos apagados)
+    if (tokens.length > 1 && allPaths) {
+      return { added: [], errors: tokens.map((token) => t('share.notFound', { path: token })) }
+    }
+    if (looksLikePath(unquoted)) return { added: [], errors: [t('share.notFound', { path: unquoted })] }
 
     return { added: [addText(line)], errors: [] }
   }
