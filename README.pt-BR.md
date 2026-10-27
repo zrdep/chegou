@@ -1,6 +1,6 @@
 <div align="center">
 
-[English](README.md) · **Português**
+[English](README.md) · [Español](README.es-ES.md) · **Português**
 
 <img src="docs/pt/banner.svg" alt="chegou: digite npx chegou, escaneie o QR e os arquivos chegam" width="760">
 
@@ -100,7 +100,7 @@ com o chegou aberto, **arraste arquivos ou pastas pra janela do terminal** ou di
 | `--dir <caminho>` | `-d` | onde salvar o que chega do celular | `~/Downloads/chegou` |
 | `--timeout <min>` | `-t` | desliga depois de X minutos sem uso (aceita `0.5` = 30 s) | desligado |
 | `--open [on\|off]` | | abre a pasta (com o arquivo selecionado) quando o 1º arquivo chega. sozinho, liga/desliga, e a escolha fica salva | ligado |
-| `--lang <idioma>` | | idioma do terminal (`pt`, `en`) | o do sistema |
+| `--lang <idioma>` | | idioma do terminal (`pt`, `en`, `es`) | o do sistema |
 | `--help` | `-h` | mostra a ajuda | |
 
 ### variáveis de ambiente
@@ -210,7 +210,11 @@ ou escolha **túnel** quando o chegou perguntar. ele cria um endereço público 
 
 ## ▸ idiomas
 
-o chegou fala **português** e **inglês**. o terminal segue o idioma do sistema e a página segue o idioma do celular, cada um no seu. pra forçar: `--lang en` no terminal ou `?lang=en` na url do celular.
+o chegou fala **português**, **inglês** e **espanhol**. o terminal segue o idioma do sistema e a página segue o idioma do celular, cada um no seu. pra forçar: `--lang en` no terminal ou `?lang=en` na url do celular.
+
+a tradução em português e inglês foi feita pelo [Pedro Randolfo](https://github.com/zrdep).
+
+a tradução para o espanhol foi feita pelo [Óscar Álvarez Lucas](https://github.com/oalvluc0702). valeu!
 
 quer traduzir pra outro idioma? são dois arquivos:
 
@@ -219,7 +223,7 @@ src/i18n/en.js       → textos do terminal
 public/i18n/en.js    → textos da página do celular
 ```
 
-copie os dois com o código do idioma (ex: `es.js`), traduza, registre em `src/i18n/index.js` e no `public/index.html`, e mande um PR.
+copie os dois com o código do idioma (ex: `fr.js`), traduza, registre em `src/i18n/index.js` e no `public/index.html`, e mande um PR.
 
 ---
 
@@ -233,10 +237,10 @@ src/
   cli/                 tudo do terminal: opções, pergunta, banner, --timeout
   server/              servidor: upload, download, compartilhar, token
   net/                 rede: IP, porta livre, túnel Cloudflare
-  i18n/                textos do terminal (pt, en)
+  i18n/                textos do terminal (pt, en, es)
 public/
   index.html, app.js   a página do celular
-  i18n/                textos da página (pt, en)
+  i18n/                textos da página (pt, en, es)
 ```
 
 ---

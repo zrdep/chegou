@@ -1,6 +1,6 @@
 <div align="center">
 
-**English** · [Português](README.pt-BR.md)
+**English** · [Español](README.es-ES.md) · [Português](README.pt-BR.md)
 
 <img src="docs/en/banner.svg" alt="chegou: type npx chegou, scan the QR and your files arrive" width="760">
 
@@ -102,7 +102,7 @@ while chegou is running, **drop files or folders on the terminal window** or typ
 | `--dir <path>` | `-d` | where to save what comes from the phone | `~/Downloads/chegou` |
 | `--timeout <min>` | `-t` | shut down after X minutes without use (`0.5` = 30 s) | off |
 | `--open [on\|off]` | | open the folder (with the file selected) when the 1st file arrives. alone it flips on/off, and the choice is saved | on |
-| `--lang <language>` | | terminal language (`en`, `pt`) | system's |
+| `--lang <language>` | | terminal language (`en`, `es`, `pt`) | system's |
 | `--help` | `-h` | show the help | |
 
 ### environment variables
@@ -212,7 +212,11 @@ or pick **tunnel** when chegou asks. it creates a public address through Cloudfl
 
 ## ▸ languages
 
-chegou speaks **English** and **Portuguese**. the terminal follows your system language and the phone page follows the phone's, each on its own. to force one: `--lang en` in the terminal or `?lang=en` in the phone's url.
+chegou speaks **English**, **Spanish** and **Portuguese**. the terminal follows your system language and the phone page follows the phone's, each on its own. to force one: `--lang en` in the terminal or `?lang=en` in the phone's url.
+
+English and Portuguese was made by [Pedro Randolfo](https://github.com/zrdep).
+
+the Spanish translation was made by [Óscar Álvarez Lucas](https://github.com/oalvluc0702). thank you!
 
 want to add a language? it's two files:
 
@@ -221,7 +225,7 @@ src/i18n/en.js       → terminal texts
 public/i18n/en.js    → phone page texts
 ```
 
-copy both using the language code (e.g. `es.js`), translate, register them in `src/i18n/index.js` and `public/index.html`, and open a PR.
+copy both using the language code (e.g. `fr.js`), translate, register them in `src/i18n/index.js` and `public/index.html`, and open a PR.
 
 ---
 
@@ -235,10 +239,10 @@ src/
   cli/                 everything terminal: options, question, banner, --timeout
   server/              server: upload, download, sharing, token
   net/                 network: IP, free port, Cloudflare tunnel
-  i18n/                terminal texts (en, pt)
+  i18n/                terminal texts (en, es, pt)
 public/
   index.html, app.js   the phone page
-  i18n/                page texts (en, pt)
+  i18n/                page texts (en, es, pt)
 ```
 
 ---
