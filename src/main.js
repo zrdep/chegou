@@ -11,7 +11,7 @@ import { revealFile } from './cli/open.js'
 import { chooseMode } from './cli/prompt.js'
 import { loadSettings, saveSettings } from './cli/settings.js'
 import { checkForUpdate } from './cli/update.js'
-import { printBanner, printDownloaded, printError, printFile, printGoodbye, printOpened, printOpenSetting, printShared, printUpdate, printWarning } from './cli/ui.js'
+import { printBanner, printDownloaded, printError, printFile, printGoodbye, printOpened, printOpenSetting, printProblem, printShared, printUpdate, printWarning } from './cli/ui.js'
 import { TOKEN_BYTES } from './config.js'
 import { t } from './i18n/index.js'
 import { findFreePort, getLocalIP } from './net/network.js'
@@ -79,12 +79,24 @@ export async function run(argv = process.argv.slice(2)) {
     }
   }
 
+  // token errado aparece no máximo 1x a cada 10 s por aparelho (sem encher a tela)
+  const lastUnauthorized = new Map()
+  function onProblem(problem) {
+    if (problem.kind === 'unauthorized') {
+      const last = lastUnauthorized.get(problem.ip) ?? 0
+      if (Date.now() - last < 10_000) return
+      lastUnauthorized.set(problem.ip, Date.now())
+    }
+    printProblem(problem)
+  }
+
   const app = await createServer({
     dir: options.dir,
     token,
     shareManager,
     onFile,
     onDownload: printDownloaded,
+    onProblem,
   })
 
   let tunnel = null

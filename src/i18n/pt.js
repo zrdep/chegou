@@ -60,6 +60,7 @@ export default {
     slow: 'o Cloudflare demorou demais pra responder',
     noUrl: 'o Cloudflare não devolveu um endereço',
     failed: 'não foi possível iniciar o cloudflared',
+    notice: 'o túnel usa o cloudflared, da Cloudflare: ao usar, você aceita os termos em cloudflare.com/terms',
   },
 
   banner: {
@@ -107,6 +108,14 @@ export default {
     available: 'nova versão disponível',
     run: 'pra atualizar:',
   },
+  problem: {
+    unauthorized: 'acesso com token errado ({ip})',
+    tooLarge: 'grande demais, não salvei: {name}',
+    failed: 'envio falhou: {name} ({reason})',
+    failedNoName: 'envio falhou ({reason})',
+    aborted: 'envio interrompido no meio: {name}',
+  },
+
   open: {
     label: 'abrir a pasta no 1º arquivo:',
     on: 'ligado',

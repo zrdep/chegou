@@ -60,6 +60,7 @@ export default {
     slow: 'Cloudflare took too long to respond',
     noUrl: "Cloudflare didn't return an address",
     failed: "couldn't start cloudflared",
+    notice: "the tunnel uses Cloudflare's cloudflared: by using it you accept the terms at cloudflare.com/terms",
   },
 
   banner: {
@@ -107,6 +108,14 @@ export default {
     available: 'new version available',
     run: 'to update:',
   },
+  problem: {
+    unauthorized: 'access with a wrong token ({ip})',
+    tooLarge: 'too large, not saved: {name}',
+    failed: 'upload failed: {name} ({reason})',
+    failedNoName: 'upload failed ({reason})',
+    aborted: 'upload interrupted halfway: {name}',
+  },
+
   open: {
     label: 'open folder on 1st file:',
     on: 'on',

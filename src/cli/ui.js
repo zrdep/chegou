@@ -12,8 +12,8 @@ const modern =
   process.platform !== 'win32' || Boolean(process.env.WT_SESSION || process.env.TERM_PROGRAM)
 
 export const sym = modern
-  ? { ok: '✓', dot: '●', warn: '▲', tl: '╭', tr: '╮', bl: '╰', br: '╯', h: '─', v: '│' }
-  : { ok: '√', dot: '•', warn: '!', tl: '┌', tr: '┐', bl: '└', br: '┘', h: '─', v: '│' }
+  ? { ok: '✓', fail: '✗', dot: '●', warn: '▲', tl: '╭', tr: '╮', bl: '╰', br: '╯', h: '─', v: '│' }
+  : { ok: '√', fail: 'x', dot: '•', warn: '!', tl: '┌', tr: '┐', bl: '└', br: '┘', h: '─', v: '│' }
 
 const stats = { files: 0, bytes: 0 }
 
@@ -197,6 +197,22 @@ export function printOpened() {
 export function printOpenSetting({ enabled, saved }) {
   const state = enabled ? pc.green(t('open.on')) : pc.yellow(t('open.off'))
   console.log(`\n  ${pc.cyan('↗')} ${t('open.label')} ${state} ${pc.dim(saved ? t('open.saved') : t('open.notSaved'))}`)
+}
+
+/**
+ * algo deu errado do lado do celular: token errado, envio que falhou ou foi interrompido
+ * @param {import('../server/index.js').Problem} problem
+ */
+export function printProblem({ kind, ip, file, reason }) {
+  const name = file ? shorten(file) : ''
+  const text = {
+    unauthorized: t('problem.unauthorized', { ip }),
+    too_large: t('problem.tooLarge', { name }),
+    failed: name ? t('problem.failed', { name, reason }) : t('problem.failedNoName', { reason }),
+    aborted: t('problem.aborted', { name }),
+  }[kind]
+  const icon = kind === 'unauthorized' ? pc.yellow('!') : pc.red(sym.fail)
+  console.log(`  ${icon} ${pc.dim(now())}  ${text}`)
 }
 
 /** aviso amarelo (pasta ignorada, túnel caiu...) */

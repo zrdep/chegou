@@ -14,10 +14,10 @@ const PUBLIC_DIR = fileURLToPath(new URL('../../public', import.meta.url))
  * cria a instância do servidor com os plugins registrados
  * as respostas de erro levam um código ('unauthorized', 'too_large'...) e quem
  * traduz é a página do celular, no idioma do próprio celular
- * @param {{ dir: string, token: string, onFile?: function, shareManager?: ReturnType<import('./share.js').createShareManager>, onDownload?: function }} options
+ * @param {{ dir: string, token: string, onFile?: function, shareManager?: ReturnType<import('./share.js').createShareManager>, onDownload?: function, onProblem?: (problem: Problem) => void }} options
  * @returns {Promise<import('fastify').FastifyInstance>}
  */
-export async function createServer({ dir, token, onFile, shareManager, onDownload }) {
+export async function createServer({ dir, token, onFile, shareManager, onDownload, onProblem }) {
   // forceCloseConnections: ao fechar, derruba também as conexões abertas
   // (o /events fica aberto pra sempre e travaria o ctrl+c)
   const app = Fastify({ logger: false, forceCloseConnections: true })
@@ -30,6 +30,8 @@ export async function createServer({ dir, token, onFile, shareManager, onDownloa
   await app.register(fastifyStatic, {
     root: PUBLIC_DIR,
   })
+
+  watchProblems(app, onProblem)
 
   // página de envio: liberada, o token vem na própria url (?t=...)
   app.get('/', (request, reply) => {
@@ -137,3 +139,51 @@ export async function createServer({ dir, token, onFile, shareManager, onDownloa
   return app
 }
 
+
+/**
+ * @typedef {Object} Problem
+ * @property {'unauthorized' | 'too_large' | 'failed' | 'aborted'} kind
+ * @property {string} ip quem fez a requisição
+ * @property {string} [file] nome do arquivo que estava chegando (uploads)
+ * @property {string} [reason] código do erro (ex.: ENOSPC), só pro terminal
+ */
+
+/**
+ * erros que antes passavam calados:
+ *  - o celular recebe só um código ('server_error', 'too_large'...), nunca a
+ *    mensagem crua do Node, que pode trazer o caminho da pasta do PC
+ *  - o terminal fica sabendo (token errado, envio que falhou ou foi interrompido)
+ * @param {import('fastify').FastifyInstance} app
+ * @param {(problem: Problem) => void} [onProblem]
+ */
+function watchProblems(app, onProblem = () => {}) {
+  const report = (request, kind, reason) => {
+    if (request.problemReported) return
+    request.problemReported = true
+    onProblem({ kind, ip: request.ip, file: request.uploadingFile, reason })
+  }
+
+  app.setErrorHandler((err, request, reply) => {
+    const status = err.statusCode >= 400 && err.statusCode < 500 ? err.statusCode : 500
+    const code = status === 413 ? 'too_large' : status === 500 ? 'server_error' : 'bad_request'
+
+    // conexão caiu no meio do envio: não é um erro do PC
+    const aborted = request.raw.aborted || err.code === 'ECONNRESET' || err.code === 'ERR_STREAM_PREMATURE_CLOSE'
+
+    if (aborted && request.uploadingFile) report(request, 'aborted')
+    else if (status === 413) report(request, 'too_large')
+    else if (status === 500) report(request, 'failed', err.code ?? err.message)
+
+    return reply.code(status).send({ error: code })
+  })
+
+  app.addHook('onResponse', async (request, reply) => {
+    if (reply.statusCode === 401) report(request, 'unauthorized')
+    if (reply.statusCode === 413) report(request, 'too_large')
+  })
+
+  // o celular fechou a página ou perdeu a rede no meio de um envio
+  app.addHook('onRequestAbort', async (request) => {
+    if (request.uploadingFile) report(request, 'aborted')
+  })
+}
