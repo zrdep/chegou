@@ -1,4 +1,4 @@
-//texto de la página para el telefono en español
+// textos de la página del móvil en español
 window.CHEGOU_LOCALES = window.CHEGOU_LOCALES || {}
 window.CHEGOU_LOCALES.es = {
   meta: { htmlLang: 'es' },
@@ -19,7 +19,7 @@ window.CHEGOU_LOCALES.es = {
     photoToPc: '# foto → PC',
     videoToPc: '# video → PC',
     sending: '# enviando',
-    progressLabel: 'progresión de subida',
+    progressLabel: 'progreso de subida',
   },
 
   buttons: {
@@ -51,6 +51,7 @@ window.CHEGOU_LOCALES.es = {
     arrived: { one: '✓ {n} archivo llegó a tu PC', other: '✓ {n} archivos llegaron a tu PC' },
     photo: '✓ la foto llegó a tu PC',
     video: '✓ el video llegó a tu PC',
+    partial: '✓ {sent} de {total} archivos llegaron a tu PC',
   },
 
   errors: {
@@ -61,6 +62,7 @@ window.CHEGOU_LOCALES.es = {
     http: 'error {status} en el PC',
     network: 'conexión perdida · ¿sigue ejecutándose chegou en el PC?',
     aborted: 'subida cancelada',
+    more: '✗ y {n} más con error',
     noToken: '! no hay token en la url · escanea el código QR en la terminal',
   },
 

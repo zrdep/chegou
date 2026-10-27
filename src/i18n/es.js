@@ -1,28 +1,28 @@
 // Textos de terminal en español
 
 export default {
-  meta: { name: 'Spanish', timeLocale: 'es-ES' },
+  meta: { name: 'español', timeLocale: 'es-ES' },
 
   help: `
   uso: chegou [opciones] [archivos, carpetas o enlaces...]
 
   ejemplos:
-    chegou                      # Abre y espera por los ficheros desde tu teléfono
-    chegou photo.jpg video.mp4  # Deja los ficheros listos para descargar en el teléfono
-    chegou ./photos             # Todos los ficheros de una carpeta
-    chegou https://mysite.com   # Envía un enlace para abrir en el teléfono
-    chegou --relay              # Usa el túnel (funciona fuera de tu wi-fi)
-    chegou --open               # Activar/desactivar apertura automática de carpetas (guardado)
+    chegou                      # se abre y espera archivos desde tu teléfono
+    chegou photo.jpg video.mp4  # deja estos archivos listos para descargar en el teléfono
+    chegou ./photos             # todos los archivos de una carpeta
+    chegou https://mysite.com   # envía un enlace para abrir en el teléfono
+    chegou --relay              # usa el túnel (funciona fuera de tu wi-fi)
+    chegou --open               # activa/desactiva abrir la carpeta (se guarda)
 
   opciones:
-    --relay, --tunnel, -r  Túnel de Cloudflare: funciona desde cualquier red (hasta 100 MB por archivo)
-    --local, -l            Red local (sin confirmación)
-    --port, -p <number>    Puerto preferido (predeterminado: {port})
-    --dir,  -d <path>      Dónde guardar los archivos entrantes (por defecto: ~/Downloads/chegou)
-    --timeout, -t <min>    Apagar después de X minutos sin uso
-    --open [on|off]        Abrir la carpeta al recibir el primer archivo: al marcarse sola cambia de estado y se guarda (por defecto: activado)
-    --lang <language>      Idioma del terminal: {langs}
-    --help, -h             Muestra esta ayuda
+    --relay, --tunnel, -r  túnel de Cloudflare: funciona desde cualquier red (hasta 100 MB por archivo)
+    --local, -l            red local, sin preguntar
+    --port, -p <número>    puerto preferido (por defecto: {port})
+    --dir,  -d <ruta>      dónde guardar los archivos recibidos (por defecto: ~/Downloads/chegou)
+    --timeout, -t <min>    se cierra tras X minutos sin uso
+    --open [on|off]        abre la carpeta cuando llega el 1.er archivo: sin valor alterna, y se guarda (por defecto: on)
+    --lang <idioma>        idioma del terminal: {langs}
+    --help, -h             muestra esta ayuda
 `,
 
   args: {
@@ -60,6 +60,7 @@ export default {
     slow: 'Cloudflare tardó demasiado en responder',
     noUrl: 'Cloudflare no devolvió ninguna dirección',
     failed: 'no se pudo iniciar cloudflared',
+    notice: 'el túnel usa cloudflared, de Cloudflare: al usarlo aceptas los términos en cloudflare.com/terms',
   },
 
   banner: {
@@ -106,6 +107,14 @@ export default {
   update: {
     available: 'nueva versión disponible',
     run: 'para actualizar:',
+  },
+
+  problem: {
+    unauthorized: 'acceso con un token incorrecto ({ip})',
+    tooLarge: 'demasiado grande, no se guardó: {name}',
+    failed: 'falló el envío: {name} ({reason})',
+    failedNoName: 'falló el envío ({reason})',
+    aborted: 'envío interrumpido a la mitad: {name}',
   },
 
   open: {
